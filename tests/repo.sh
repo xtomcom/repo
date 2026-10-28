@@ -3,6 +3,7 @@
 # End-to-end repository test with a throwaway GPG key and a local directory as
 # the server. OLD and NEW must be in the same branch of NAME. Checks that:
 #   - the first publish turns the old real rpm/elN directories into symlinks
+#     and removes rpm/el8
 #   - apt and dnf trust the repo and install OLD, also via rpm/el$releasever
 #   - publishing NEW upgrades those clients and removes OLD from the indexes
 #     and from the server
@@ -55,6 +56,8 @@ run "$publisher" '
   # The old layout had a real directory per EL release.
   mkdir -p /t/www/rpm/el9/x86_64/repodata /t/www/rpm/el9/x86_64/Packages
   touch /t/www/rpm/el9/x86_64/repodata/repomd.xml /t/www/rpm/el9/x86_64/Packages/old.rpm
+  # el8 is no longer supported; its link must go away.
+  ln -s . /t/www/rpm/el8
 '
 publish() {
   run "$publisher" "
@@ -66,7 +69,7 @@ publish() {
 
 log "publish $old"
 publish "$old"
-run "$publisher" 'test "$(readlink /t/www/rpm/el9)" = .'
+run "$publisher" 'test "$(readlink /t/www/rpm/el9)" = . && test ! -e /t/www/rpm/el8 && test ! -L /t/www/rpm/el8'
 
 deb_clients=() rpm_clients=()
 for image in $DEB_IMAGES; do
@@ -141,5 +144,6 @@ refuse() {
 refuse debian:13 "run this as root" --user 1000
 refuse debian:11 "Debian 12 or newer is required"
 refuse ubuntu:20.04 "Ubuntu 22.04 or newer is required"
+refuse rockylinux:8 "version 9 or newer is required"
 
 log "repository test passed"

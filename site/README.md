@@ -12,13 +12,13 @@ Every binary is the official upstream release, verified against upstream checksu
 
 - Debian 12 and 13
 - Ubuntu 22.04, 24.04 and 26.04 LTS
-- RHEL, Rocky Linux and AlmaLinux 8, 9 and 10
+- RHEL, Rocky Linux and AlmaLinux 9 and 10
 
 We support only releases that their vendor still maintains.
 
 ## Quick setup
 
-Run as root to add the repository on Debian 12+, Ubuntu 22.04+ or RHEL-compatible 8+ (it picks DEB822 sources or a `.repo` file for you):
+Run as root to add the repository on Debian 12+, Ubuntu 22.04+ or RHEL-compatible 9+ (it picks DEB822 sources or a `.repo` file for you):
 
 ```bash
 curl -sL ba.sh/repo | bash

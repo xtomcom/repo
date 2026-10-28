@@ -27,7 +27,6 @@ body:
         - Ubuntu 22.04
         - RHEL / Rocky / AlmaLinux 10
         - RHEL / Rocky / AlmaLinux 9
-        - RHEL / Rocky / AlmaLinux 8
         - Other (please specify below)
     validations:
       required: true

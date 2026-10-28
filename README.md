@@ -33,11 +33,11 @@ Want something added? [Request a package](https://github.com/xtomcom/repo/issues
 
 ## Supported systems
 
-We only support distribution releases that are still maintained by their vendor (including Debian LTS). EOL releases may keep working, but we don't test them or fix problems specific to them.
+We only support distribution releases that are still maintained by their vendor (including Debian LTS). RHEL 8 and its rebuilds are not supported: their rpm cannot verify our Ed25519 package signatures. EOL releases may keep working, but we don't test them or fix problems specific to them.
 
 - Debian 12 and 13
 - Ubuntu 22.04, 24.04 and 26.04 LTS
-- RHEL, Rocky Linux and AlmaLinux 8, 9 and 10
+- RHEL, Rocky Linux and AlmaLinux 9 and 10
 
 Every package is test-installed on the newest of these (Debian 13, Ubuntu 26.04 and Rocky Linux 10) on both architectures before it is published.
 
@@ -47,7 +47,7 @@ The same rule applies to the software: when an upstream branch reaches end of li
 
 ### Quick setup
 
-Run as root to add the repository on Debian 12+, Ubuntu 22.04+ or RHEL-compatible 8+ (it picks DEB822 sources or a `.repo` file for you):
+Run as root to add the repository on Debian 12+, Ubuntu 22.04+ or RHEL-compatible 9+ (it picks DEB822 sources or a `.repo` file for you):
 
 ```bash
 curl -sL ba.sh/repo | bash

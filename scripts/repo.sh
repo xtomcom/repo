@@ -4,7 +4,7 @@
 #   curl -sL ba.sh/repo | bash
 #
 # Debian 12+ and Ubuntu 22.04+ get /etc/apt/sources.list.d/xtom.sources;
-# RHEL, Rocky Linux, AlmaLinux, CentOS Stream and Oracle Linux 8+ get
+# RHEL, Rocky Linux, AlmaLinux, CentOS Stream and Oracle Linux 9+ get
 # /etc/yum.repos.d/xtom.repo. Must run as root. Safe to run again.
 
 set -euo pipefail
@@ -76,8 +76,9 @@ case ${ID:-} in
     setup_apt
     ;;
   rhel | rocky | almalinux | centos | ol)
-    version_ge "${VERSION_ID%%.*}" 8 ||
-      fail "$NAME $VERSION_ID is not supported, version 8 or newer is required"
+    # rpm 4.14 in EL8 cannot verify Ed25519 signatures, so it rejects our packages.
+    version_ge "${VERSION_ID%%.*}" 9 ||
+      fail "$NAME $VERSION_ID is not supported, version 9 or newer is required"
     setup_dnf
     ;;
   *)

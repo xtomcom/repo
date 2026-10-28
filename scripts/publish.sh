@@ -24,7 +24,8 @@ source "$(dirname "$0")/lib.sh"
 PUBLIC_URL=${PUBLIC_URL:-https://repo.xtom.com}
 DEB_ARCHS=(amd64 arm64)
 RPM_ARCHS=(x86_64 aarch64)
-EL_LINKS=(el8 el9 el10) # old per-release rpm paths, kept as symlinks for existing configs
+EL_LINKS=(el9 el10) # old per-release rpm paths, kept as symlinks for existing configs
+EL_DROPPED=(el8)    # unsupported releases, removed from the server
 
 # remote_delete DIR FILE...: delete these files in $REPO_DEST/DIR, nothing else.
 remote_delete() {
@@ -229,9 +230,10 @@ for arch in "${RPM_ARCHS[@]}"; do
   rsync -a --checksum --delay-updates --delete-after "$repo/rpm/$arch/repodata/" "$REPO_DEST/rpm/$arch/repodata/"
 done
 # Point the old per-release paths at the shared tree, replacing the real
-# el8/el9/el10 directories of the old layout. --delete is limited to them.
+# directories of the old layout, and remove those of unsupported releases.
+# --delete is limited to these paths.
 filters=()
-for el in "${EL_LINKS[@]}"; do filters+=("--include=/$el" "--include=/$el/***"); done
+for el in "${EL_LINKS[@]}" "${EL_DROPPED[@]}"; do filters+=("--include=/$el" "--include=/$el/***"); done
 rsync -a --force --delete "${filters[@]}" --exclude='*' "$repo/rpm/" "$REPO_DEST/rpm/"
 
 declare -A by_dir=()
