@@ -129,9 +129,9 @@ scripts/test.sh     install, run and remove the packages in clean containers
 scripts/publish.sh  merge into the indexes, drop superseded builds, sign, upload, purge the CDN cache
 ```
 
-`.github/workflows/update.yml` runs these steps every day. Each package and architecture is built and tested on a native GitHub runner, and a release is only published once all of its architectures have passed. `versions.json` records what the repository holds.
+`.github/workflows/update.yml` runs these steps every day. Each package and architecture is built and tested on a native GitHub runner, and a release is only published once all of its architectures have passed. `versions.json` records what the repository holds, as `VERSION-RELEASE`, so bumping `RELEASE` in a package republishes it.
 
-You can also run the workflow by hand with a list of packages. `NAME` checks one package for new releases. `NAME@VERSION` builds that exact version. A file name is never published twice, because CDNs and clients cache pool files forever: to ship a packaging fix, bump `RELEASE` in the package's `package.sh` first.
+You can also run the workflow by hand with a list of packages. `NAME` checks one package for new releases. `NAME@VERSION` builds that exact version. A file name is never published twice, because CDNs and clients cache pool files forever: to ship a packaging fix, bump `RELEASE` in the package's `package.sh`, and the next run publishes it.
 
 The `README.md` served at repo.xtom.com is [`site/README.md`](site/README.md), with the package table filled in at publish time. The signing key `xtom.key` on the server is managed by hand; the scripts never write it.
 
@@ -139,7 +139,7 @@ The `README.md` served at repo.xtom.com is [`site/README.md`](site/README.md), w
 
 Each package is a directory under `packages/` with:
 
-- `package.sh` sets `UPSTREAM`, `BRANCHES` (the release branches we carry, e.g. `(1.27 1.26)`), `ARCHS` and `TEST_CMD`, and defines `prepare VERSION ARCH`, which downloads and verifies the upstream files. It can also override `versions` when the upstream isn't a GitHub release, as for Go.
+- `package.sh` sets `UPSTREAM`, `BRANCHES` (the release branches we carry, e.g. `(1.27 1.26)`), `ARCHS` and `TEST_CMD`, and defines `prepare VERSION ARCH`, which downloads and verifies the upstream files. It can also override `versions` when the upstream isn't a GitHub release, as for Go. Packages with a systemd service also set `SERVICE_TEST`: `scripts/test.sh` then installs them in Debian, Ubuntu and Rocky containers running systemd, checks that nothing starts on install, runs the test (which configures the service the way the install notice says, starts it and talks to it) and checks that removal stops it.
 - `nfpm.yaml` is the [nfpm](https://nfpm.goreleaser.com/) package definition.
 - When upstream ships both glibc and musl builds, use the glibc one and call `check_glibc` on it in `prepare`: it fails the build if the binary needs a newer glibc than the oldest supported system has (2.34, EL9). Use the musl build only when the glibc one needs more than that. Never ship both.
 - Any unit files and maintainer scripts the package needs.

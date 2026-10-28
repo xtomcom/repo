@@ -14,6 +14,27 @@ pid=$!
 for i in $(seq 60); do (exec 3<>/dev/tcp/127.0.0.1/9000) 2>/dev/null && break; sleep 1; done
 (exec 3<>/dev/tcp/127.0.0.1/9000)
 kill $pid'
+SERVICE_TEST='
+# The untouched /etc/default/rustfs sets no volume, so the unit must not come up.
+! systemctl start rustfs
+journalctl -u rustfs | grep -q "<VOLUMES>"
+systemctl stop rustfs
+# The minimal settings the install notice asks for.
+cat >>/etc/default/rustfs <<EOF
+RUSTFS_VOLUMES="/data/rustfs"
+RUSTFS_ACCESS_KEY=xtomtest
+RUSTFS_SECRET_KEY=xtomtestsecret
+EOF
+systemctl start rustfs
+curl -sS --retry 5 --retry-connrefused http://127.0.0.1:9000/ | grep -q "<Code>AccessDenied</Code>"
+test "$(stat -c %U /proc/$(systemctl show -P MainPID rustfs))" = rustfs
+# Signed S3 requests with the configured keys land in the configured volume.
+s3() { curl -fsS --aws-sigv4 aws:amz:us-east-1:s3 --user xtomtest:xtomtestsecret "$@"; }
+s3 -X PUT http://127.0.0.1:9000/xtom-test
+s3 -X PUT --data-binary hello http://127.0.0.1:9000/xtom-test/hello.txt
+test "$(s3 http://127.0.0.1:9000/xtom-test/hello.txt)" = hello
+test "$(stat -c %U /data/rustfs/xtom-test/hello.txt/xl.meta)" = rustfs
+'
 
 prepare() {
   local version=$1 base=https://github.com/$UPSTREAM/releases/download/$1 raw=https://raw.githubusercontent.com/$UPSTREAM/$1 file

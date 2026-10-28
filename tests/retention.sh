@@ -5,7 +5,8 @@
 
 source "$(dirname "$0")/../scripts/lib.sh"
 
-got=$(stale deb <<'EOF2'
+# nodejs-20 stands for a package removed from packages/ after its last release.
+got=$(RETIRED="nodejs-20" stale deb <<'EOF2'
 golang 2:1.27.3-1 a/golang_1.27.3-1_amd64.deb
 golang 2:1.27.4-1 a/golang_1.27.4-1_amd64.deb
 golang 2:1.26.10-1 a/golang_1.26.10-1_amd64.deb
@@ -15,12 +16,14 @@ rdap 1:1.0.9-1 a/rdap_1.0.9-1_amd64.deb
 gitea 28.2.0-2 a/gitea_28.2.0-2_amd64.deb
 gitea 28.2.0-1 a/gitea_28.2.0-1_amd64.deb
 unrelated 9.9 a/unrelated_9.9_amd64.deb
+nodejs-20 20.20.2-1 a/nodejs-20_20.20.2-1_amd64.deb
 EOF2
 )
 want='a/golang_1.27.3-1_amd64.deb
 a/golang_1.25.9-1_amd64.deb
 a/rdap_1.0.9_amd64.deb
-a/gitea_28.2.0-1_amd64.deb'
+a/gitea_28.2.0-1_amd64.deb
+a/nodejs-20_20.20.2-1_amd64.deb'
 [[ $got == "$want" ]] || die "deb: got:"$'\n'"$got"
 
 got=$(stale rpm <<'EOF2'

@@ -13,6 +13,28 @@ grep -q "^ExecStart=/usr/bin/maddy run" /usr/lib/systemd/system/maddy.service
 getent passwd maddy
 test "$(stat -c %U:%G /var/lib/maddy)" = maddy:maddy
 test -f /etc/maddy/maddy.conf'
+SERVICE_TEST='
+command -v openssl >/dev/null || dnf install -y -q openssl
+sed -i -e "s/^\$(hostname) = .*/\$(hostname) = mx.example.test/" \
+  -e "s/^\$(primary_domain) = .*/\$(primary_domain) = example.test/" /etc/maddy/maddy.conf
+d=/etc/maddy/certs/mx.example.test
+mkdir -p $d
+openssl req -x509 -newkey rsa:2048 -nodes -days 1 -subj /CN=mx.example.test \
+  -keyout $d/privkey.pem -out $d/fullchain.pem 2>/dev/null
+chgrp maddy $d/privkey.pem && chmod 640 $d/privkey.pem
+systemctl enable --now maddy
+for p in 25 587; do
+  exec 3<>/dev/tcp/127.0.0.1/$p
+  read -r -t 10 greeting <&3
+  exec 3<&-
+  case $greeting in 220*mx.example.test*) ;; *) echo "bad greeting on $p: $greeting"; exit 1 ;; esac
+done
+runuser -u maddy -- maddy creds create --password Secret-pass-123 postmaster@example.test
+runuser -u maddy -- maddy creds list | grep -qx postmaster@example.test
+runuser -u maddy -- maddy imap-acct create postmaster@example.test
+runuser -u maddy -- maddy imap-acct list | grep -q postmaster@example.test
+rm -r /etc/maddy/certs
+'
 
 prepare() {
   local version=$1 name gnupg fpr unit

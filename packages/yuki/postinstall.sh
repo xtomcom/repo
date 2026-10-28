@@ -13,7 +13,8 @@ if getent group docker >/dev/null; then usermod -aG docker mirror; fi
 if [ "$1" = 1 ] || { [ "$1" = configure ] && [ -z "$2" ]; }; then
   cat <<'EOF'
 Yuki is installed but not started. To start it:
-  1. cp /etc/yuki/daemon.example.toml /etc/yuki/daemon.toml and edit it
+  1. cp /etc/yuki/daemon.example.toml /etc/yuki/daemon.toml and edit it;
+     put repository configs (*.yaml) in /etc/yuki/repos
   2. systemctl enable --now yukid
 EOF
   getent group docker >/dev/null ||

@@ -8,8 +8,9 @@
 # than every listed branch only raises a warning, since moving to a new major
 # version is a decision for a human.
 #
-# NAME@VERSION forces that exact version, e.g. to publish a packaging fix after
-# bumping RELEASE.
+# versions.json records VERSION-RELEASE, so bumping RELEASE in package.sh
+# republishes the current release with the packaging fix. NAME@VERSION forces
+# that exact version.
 
 source "$(dirname "$0")/lib.sh"
 
@@ -35,7 +36,8 @@ for arg in "${names[@]}"; do
       done
       if [[ -z $latest ]]; then
         warn "$name: no upstream release in branch $branch"
-      elif [[ " ${published[*]} " != *" $latest "* ]]; then
+      elif [[ " ${published[*]} " != *" $latest-$RELEASE "* ]]; then
+        # New upstream release, or a new RELEASE of the current one.
         todo+=("$latest")
       fi
     done

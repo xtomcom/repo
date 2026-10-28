@@ -13,6 +13,35 @@ test "$(stat -c %U:%G:%a /etc/gitea)" = root:git:770
 test "$(stat -c %U:%G:%a /var/lib/gitea/data)" = git:git:750
 git --version
 runuser -u git -- gitea doctor check --list >/dev/null'
+SERVICE_TEST='
+systemctl enable --now gitea
+curl -fsS --retry 10 --retry-connrefused http://127.0.0.1:3000/ | grep -qi install
+# A headless install: the app.ini the web installer would write, minus the
+# defaults. /etc/gitea stays root:git 0770 so Gitea can save generated secrets.
+systemctl stop gitea
+cat >/etc/gitea/app.ini <<INI
+RUN_USER = git
+WORK_PATH = /var/lib/gitea
+[server]
+HTTP_PORT = 3000
+ROOT_URL = http://127.0.0.1:3000/
+[database]
+DB_TYPE = sqlite3
+PATH = /var/lib/gitea/data/gitea.db
+[security]
+INSTALL_LOCK = true
+SECRET_KEY = $(gitea generate secret SECRET_KEY)
+INTERNAL_TOKEN = $(gitea generate secret INTERNAL_TOKEN)
+INI
+chown root:git /etc/gitea/app.ini && chmod 660 /etc/gitea/app.ini
+systemctl start gitea
+v=$(gitea --version | awk "{print \$3}")
+curl -fsS --retry 10 --retry-connrefused http://127.0.0.1:3000/api/v1/version | grep -qF "\"version\":\"$v\""
+# The wrapper finds /etc/gitea/app.ini on its own.
+runuser -u git -- gitea admin user create --admin --username tester --password Secret-pass-123 \
+  --email tester@example.com --must-change-password=false
+curl -fsS -u tester:Secret-pass-123 http://127.0.0.1:3000/api/v1/user | grep -q "\"login\":\"tester\""
+'
 
 prepare() {
   local version=$1 base=https://github.com/$UPSTREAM/releases/download/v$1 file gnupg fpr

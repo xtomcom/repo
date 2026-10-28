@@ -1,7 +1,12 @@
 #!/bin/sh
-# deb: "remove"; rpm: 0 = removal (not upgrade).
-[ -d /run/systemd/system ] || exit 0
+# deb: "remove"; rpm: 0 = removal (not upgrade). Stop and disable every
+# instance, so no enablement links to the removed template are left behind.
 if [ "$1" = remove ] || [ "$1" = 0 ]; then
-  systemctl stop 'anubis@*.service' >/dev/null 2>&1 || :
+  if [ -d /run/systemd/system ]; then
+    systemctl stop 'anubis@*.service' >/dev/null 2>&1 || :
+  fi
+  for link in /etc/systemd/system/*.wants/anubis@*.service; do
+    [ -L "$link" ] && systemctl disable "${link##*/}" >/dev/null 2>&1 || :
+  done
 fi
 exit 0

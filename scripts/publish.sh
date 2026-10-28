@@ -79,6 +79,13 @@ for f in "${debs[@]}" "${rpms[@]}"; do
     die "$(basename "$f") is already published; bump RELEASE in its package.sh to rebuild it"
 done
 
+# Packages in versions.json whose directory is gone from packages/ have been
+# retired (e.g. an upstream branch reached end of life): drop all their builds.
+RETIRED=$(jq -r 'keys[]' "$VERSIONS_FILE" 2>/dev/null | while read -r name; do
+  [[ -f $ROOT/packages/$name/package.sh ]] || echo "$name"
+done | xargs)
+[[ -z $RETIRED ]] || log "retire $RETIRED"
+
 # --- deb -------------------------------------------------------------------
 
 for f in "${debs[@]}"; do
@@ -186,15 +193,16 @@ gpgkey=$PUBLIC_URL/xtom.key
 EOF
 # --- state and README ------------------------------------------------------
 
-# versions.json mirrors what the deb indexes now hold for our packages.
+# versions.json mirrors what the deb indexes now hold for our packages, as
+# VERSION-RELEASE without the epoch.
 awk -v RS= '{
     for (i = 1; i <= split($0, l, "\n"); i++) { split(l[i], kv, ": "); f[kv[1]] = kv[2] }
-    v = f["Version"]; sub(/^[0-9]+:/, "", v); sub(/-[^-]*$/, "", v)
+    v = f["Version"]; sub(/^[0-9]+:/, "", v)
     print f["Package"], v
   }' "$dists"/main/binary-*/Packages | sort -u | while read -r name version; do
   if [[ -f $ROOT/packages/$name/package.sh ]]; then echo "$name $version"; fi
 done | jq -Rn '[inputs | split(" ") | {key: .[0], value: .[1]}] | group_by(.key)
-  | map({key: .[0].key, value: map(.value) | sort_by(split(".") | map(tonumber? // .)) | reverse})
+  | map({key: .[0].key, value: map(.value) | sort_by([splits("[.-]")] | map(tonumber? // .)) | reverse})
   | from_entries' > "$VERSIONS_FILE"
 
 # The README on the site is site/README.md with the package table filled in.
@@ -206,7 +214,7 @@ done | jq -Rn '[inputs | split(" ") | {key: .[0], value: .[1]}] | group_by(.key)
     load_package "$name"
     printf '| [%s](%s) | %s | %s | %s |\n' "$name" \
       "$(sed -n 's/^homepage: //p' "$PKG_DIR/nfpm.yaml")" \
-      "$(jq -r --arg n "$name" '.[$n] | join(", ")' "$VERSIONS_FILE")" \
+      "$(jq -r --arg n "$name" '.[$n] | map(sub("-[^-]*$"; "")) | join(", ")' "$VERSIONS_FILE")" \
       "${ARCHS[*]}" "$(sed -n '/^description:/{n;s/^ *//p}' "$PKG_DIR/nfpm.yaml")"
   done
 } > "$WORK/packages.md"

@@ -14,7 +14,8 @@ base=${1:-}
 all=true
 names=()
 if [[ -n $base ]] && changed=$(git -C "$ROOT" diff --name-only "$base" HEAD 2>/dev/null); then
-  shared=$(grep -vE '^(packages/|site/|\.github/ISSUE_TEMPLATE/|versions\.json$)|\.md$' <<< "$changed" || true)
+  # packages/_shared/ is linked into several packages, so it counts as shared.
+  shared=$(grep -vE '^(packages/[^_]|site/|\.github/ISSUE_TEMPLATE/|versions\.json$)|\.md$' <<< "$changed" || true)
   if [[ -z $shared ]]; then
     all=false
     while read -r name; do

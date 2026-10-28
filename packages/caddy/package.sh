@@ -1,6 +1,7 @@
 # shellcheck shell=bash
 UPSTREAM=caddyserver/caddy
 BRANCHES=(2)
+RELEASE=2
 TEST_CMD='
 v=$(basename "$PKG" | grep -oE "[0-9]+\.[0-9]+\.[0-9]+" | head -n1)
 caddy version | grep "^v$v "
@@ -18,6 +19,32 @@ exec 3<>/dev/tcp/127.0.0.1/80
 printf "GET / HTTP/1.0\r\nHost: localhost\r\n\r\n" >&3
 grep -q "Caddy works" <&3
 caddy stop
+'
+SERVICE_TEST='
+# The stock Caddyfile serves the welcome page on :80 as the unprivileged
+# caddy user (CAP_NET_BIND_SERVICE).
+systemctl start caddy
+curl -fsS --retry 5 --retry-connrefused http://127.0.0.1/ | grep -q "Caddy works"
+pid=$(systemctl show -P MainPID caddy)
+test "$(stat -c %U /proc/$pid)" = caddy
+# ExecReload (caddy reload) applies an edited Caddyfile in place.
+printf ":8080 {\n\trespond \"ok\"\n}\n" >/etc/caddy/Caddyfile
+systemctl reload caddy
+test "$(curl -fsS --retry 5 --retry-connrefused http://127.0.0.1:8080/)" = ok
+! curl -fsS http://127.0.0.1/
+test "$(systemctl show -P MainPID caddy)" = "$pid"
+# caddy-api.service resumes the config caddy autosaved in its state directory
+# and takes new config through the admin API.
+test -f /var/lib/caddy/.config/caddy/autosave.json
+systemctl stop caddy
+systemctl start caddy-api
+curl -fsS --retry 5 --retry-connrefused http://localhost:2019/config/ | grep -q :8080
+test "$(stat -c %U /proc/$(systemctl show -P MainPID caddy-api))" = caddy
+curl -fsS -H "Content-Type: text/caddyfile" --data-binary ":81 {
+	respond \"api\"
+}" http://localhost:2019/load
+test "$(curl -fsS --retry 5 --retry-connrefused http://127.0.0.1:81/)" = api
+systemctl stop caddy-api
 '
 
 # checksums.txt lists SHA-512 sums. The release also carries cosign (sigstore)

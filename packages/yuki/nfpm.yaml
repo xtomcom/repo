@@ -21,7 +21,8 @@ overrides:
       - docker.io | docker-engine | docker-ce
   rpm:
     recommends:
-      - (docker-ce or moby-engine or podman-docker)
+      # Not podman-docker: yukid.service requires docker.service.
+      - (docker-ce or moby-engine)
 contents:
   - src: ./yukid
     dst: /usr/bin/yukid
@@ -34,6 +35,10 @@ contents:
     type: symlink
   - src: ./yukid.service
     dst: /usr/lib/systemd/system/yukid.service
+  - src: ./yukid.conf
+    dst: /usr/lib/systemd/system/yukid.service.d/xtom.conf
+  - dst: /etc/yuki/repos
+    type: dir
   - src: ./yuki.sysusers
     dst: /usr/lib/sysusers.d/yuki.conf
   - src: ./daemon.example.toml

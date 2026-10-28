@@ -104,7 +104,7 @@ log "publish $new"
 publish "$new"
 run "$publisher" '
   cat /t/versions.json
-  test "$(jq -c --arg n "$NAME" ".[\$n]" /t/versions.json)" = "[\"$NEW\"]"
+  test "$(jq -c --arg n "$NAME" ".[\$n]" /t/versions.json)" = "[\"$NEW-1\"]"
   ! find /t/www -name "*$OLD*" | grep .
   sha256sum -c --quiet /t/xtom.key.sha256
   grep -q "^| \[$NAME\](.*) | $NEW | " /t/www/README.md

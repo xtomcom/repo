@@ -74,6 +74,7 @@ load_package() {
   RELEASE=1
   BRANCHES=()
   TEST_CMD=
+  SERVICE_TEST=
   unset -f versions prepare
   # Default: stable GitHub releases of $UPSTREAM.
   versions() { gh_versions "$UPSTREAM"; }
@@ -104,7 +105,9 @@ version_gt() {
 
 # stale FORMAT: reads "NAME VERSION FILE" lines of one index and prints the
 # FILEs to drop: every build of a package in packages/ that is not the newest
-# one of a branch in its BRANCHES. Anything else in the index is left alone.
+# one of a branch in its BRANCHES, and every build of a package named in
+# RETIRED (published once, since removed from packages/). Anything else in the
+# index is left alone.
 stale() {
   local fmt=$1 name version file upstream branch key
   local -A best=() best_file=()
@@ -125,7 +128,11 @@ stale() {
   for file in "${best_file[@]}"; do keep[$file]=1; done
   for entry in "${entries[@]}"; do
     read -r name version file <<< "$entry"
-    [[ -f $ROOT/packages/$name/package.sh && -z ${keep[$file]:-} ]] && echo "$file"
+    if [[ " ${RETIRED:-} " == *" $name "* ]]; then
+      echo "$file"
+    elif [[ -f $ROOT/packages/$name/package.sh && -z ${keep[$file]:-} ]]; then
+      echo "$file"
+    fi
   done
   return 0
 }

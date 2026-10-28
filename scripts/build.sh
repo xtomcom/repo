@@ -23,7 +23,8 @@ for arch in "${archs[@]}"; do
   stage=$WORK/$name-$version-$arch
   rm -rf "$stage"
   mkdir -p "$stage/dl"
-  cp -r "$PKG_DIR/." "$stage/"
+  # -L: package dirs may link to files shared under packages/_shared/.
+  cp -rL "$PKG_DIR/." "$stage/"
   # packages/NAME/README.md documents the package in this repository only.
   rm -f "$stage/README.md"
 

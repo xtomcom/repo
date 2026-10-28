@@ -15,6 +15,11 @@ description: |-
   /etc/ferron.kdl and serves /var/www/ferron by default.
 depends:
   - ca-certificates
+overrides:
+  # ExecReload runs kill(1), which Debian and Ubuntu ship in procps (not
+  # essential, missing from minimal installs); on EL it is in util-linux.
+  deb:
+    depends: [ca-certificates, procps]
 contents:
   - src: ./ferron
     dst: /usr/sbin/ferron

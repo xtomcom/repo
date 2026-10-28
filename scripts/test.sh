@@ -2,6 +2,7 @@
 # Usage: test.sh NAME VERSION ARCH
 # Installs the built .deb/.rpm in clean containers of the newest supported
 # distributions, runs the package's TEST_CMD, then removes the package again.
+# Packages that set SERVICE_TEST are also tested under a real systemd.
 # The containers resolve dependencies from the distribution's own repositories,
 # exactly like a user running `apt install ./x.deb` or `dnf install ./x.rpm`.
 
@@ -47,4 +48,66 @@ for image in $RPM_IMAGES; do
     bash -euxc "$TEST_CMD"
     dnf remove -y -q "$NAME"
   '
+done
+
+[[ -n $SERVICE_TEST ]] || exit 0
+
+# Packages with a service also run under a real systemd (PID 1), where we
+# check that installing prints the start notice but starts nothing, that
+# SERVICE_TEST can configure and start the service and reach it, and that
+# removing the package stops it.
+
+# systemd_image IMAGE: a local image of IMAGE with systemd as its init.
+systemd_image() {
+  local tag=xtom-systemd-test:${1//[\/:]/-}-$arch install
+  case $1 in
+    rockylinux*) install='dnf install -y -q systemd procps-ng && dnf clean all' ;;
+    *) install='apt-get update -qq && DEBIAN_FRONTEND=noninteractive apt-get install -y -qq systemd systemd-sysv curl ca-certificates >/dev/null && apt-get clean' ;;
+  esac
+  printf 'FROM %s\nRUN %s\nCMD ["/sbin/init"]\n' "$1" "$install" |
+    docker build -q --platform "linux/$arch" -t "$tag" - >/dev/null
+  echo "$tag"
+}
+
+run_systemd() {
+  local image=$1 file=$2 install=$3 remove=$4 id state
+  log "service test $(basename "$file") on $image"
+  id=$(docker run -d --platform "linux/$arch" --privileged --cgroupns=host \
+    -v /sys/fs/cgroup:/sys/fs/cgroup:rw --tmpfs /run --tmpfs /run/lock --tmpfs /tmp \
+    -v "$file:/pkg/$(basename "$file"):ro" "$(systemd_image "$image")")
+  # shellcheck disable=SC2064 # expand $id now
+  trap "docker rm -f $id >/dev/null" RETURN
+  for _ in $(seq 60); do
+    state=$(docker exec "$id" systemctl is-system-running 2>/dev/null || true)
+    [[ $state == running || $state == degraded ]] && break
+    sleep 1
+  done
+  docker exec -e PKG="/pkg/$(basename "$file")" -e NAME="$name" -e SERVICE_TEST="$SERVICE_TEST" \
+    -e INSTALL="$install" -e REMOVE="$remove" "$id" bash -euxc '
+    out=$(eval "$INSTALL" 2>&1) || { echo "$out"; exit 1; }
+    echo "$out" | grep -q "is installed but not started" || { echo "$out"; echo "no start notice"; exit 1; }
+    units=$( (dpkg -L "$NAME" 2>/dev/null || rpm -ql "$NAME") | grep -E "/systemd/system/[^@/]+\.service$" | xargs -rn1 basename)
+    for u in $units; do
+      [ "$(systemctl is-active "$u" || true)" = inactive ] || { echo "$u was started on install"; exit 1; }
+    done
+    bash -euxc "$SERVICE_TEST"
+    # Removal must also undo `systemctl enable`, leaving no dangling links.
+    for u in $units; do systemctl enable "$u"; done
+    eval "$REMOVE"
+    for u in $units; do
+      [ "$(systemctl is-active "$u" || true)" != active ] || { echo "$u still running after removal"; exit 1; }
+      ! systemctl cat "$u" >/dev/null 2>&1 || { echo "$u still installed after removal"; exit 1; }
+    done
+    dangling=$(find /etc/systemd/system -xtype l)
+    [ -z "$dangling" ] || { echo "links to removed units left behind: $dangling"; exit 1; }
+  '
+}
+
+for image in $DEB_IMAGES; do
+  run_systemd "$image" "${debs[0]}" \
+    'apt-get update -qq && DEBIAN_FRONTEND=noninteractive apt-get install -y "$PKG"' \
+    'DEBIAN_FRONTEND=noninteractive apt-get purge -y -qq "$NAME"'
+done
+for image in $RPM_IMAGES; do
+  run_systemd "$image" "${rpms[0]}" 'dnf install -y "$PKG"' 'dnf remove -y -q "$NAME"'
 done

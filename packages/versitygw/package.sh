@@ -1,6 +1,7 @@
 # shellcheck shell=bash
 UPSTREAM=versity/versitygw
 BRANCHES=(1)
+RELEASE=2
 TEST_CMD='versitygw --version | grep -q "^Version"
 test -f /usr/lib/systemd/system/versitygw@.service
 grep -q "^EnvironmentFile=/etc/versitygw.d/%i.conf$" /usr/lib/systemd/system/versitygw@.service
@@ -15,6 +16,23 @@ ROOT_ACCESS_KEY_ID=test ROOT_SECRET_ACCESS_KEY=testsecret versitygw --port 127.0
 for i in $(seq 20); do (exec 3<>/dev/tcp/127.0.0.1/7070) 2>/dev/null && break; sleep 0.5; done
 (exec 3<>/dev/tcp/127.0.0.1/7070)
 kill %1'
+SERVICE_TEST='
+mkdir -p /srv/s3
+sed -e "s|^VGW_BACKEND_ARG=.*|VGW_BACKEND_ARG=/srv/s3|" -e "s|^ROOT_ACCESS_KEY_ID=.*|ROOT_ACCESS_KEY_ID=tester|" \
+  -e "s|^ROOT_SECRET_ACCESS_KEY=.*|ROOT_SECRET_ACCESS_KEY=Secret-pass-123|" \
+  /etc/versitygw.d/example.conf >/etc/versitygw.d/test.conf
+systemctl enable --now versitygw@test
+# Unsigned requests get an S3 error...
+curl -sS --retry 10 --retry-connrefused http://127.0.0.1:7070/ | grep -q "<Code>AccessDenied</Code>"
+# ...and signed ones land in the posix backend.
+s3() { curl -fsS --aws-sigv4 aws:amz:us-east-1:s3 -u tester:Secret-pass-123 "$@"; }
+s3 -X PUT http://127.0.0.1:7070/bucket
+echo hello >/tmp/hello.txt && s3 -T /tmp/hello.txt http://127.0.0.1:7070/bucket/hello.txt
+test "$(cat /srv/s3/bucket/hello.txt)" = hello
+s3 http://127.0.0.1:7070/bucket | grep -q "<Key>hello.txt</Key>"
+# Left enabled on purpose: removing the package must stop and disable it.
+rm /etc/versitygw.d/test.conf
+'
 
 prepare() {
   local version=$1 base=https://github.com/$UPSTREAM/releases/download/v$1 raw dir f

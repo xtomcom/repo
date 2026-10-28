@@ -1,6 +1,8 @@
 # shellcheck shell=bash
 UPSTREAM=ferronweb/ferron
 BRANCHES=(2)
+# 2: deb depends on procps for the unit's ExecReload (kill).
+RELEASE=2
 TEST_CMD='ferron --version | grep "^Ferron 2\."
 ferron-passwd --version
 ferron-precompress --version
@@ -16,6 +18,19 @@ exec 3<>/dev/tcp/127.0.0.1/80
 printf "GET / HTTP/1.0\r\nHost: localhost\r\n\r\n" >&3
 grep -q "Ferron is installed successfully" <&3
 kill $pid'
+SERVICE_TEST='
+# The stock /etc/ferron.kdl serves /var/www/ferron on :80 as the unprivileged
+# ferron user (CAP_NET_BIND_SERVICE) and logs to /var/log/ferron.
+systemctl start ferron
+curl -fsS --retry 5 --retry-connrefused http://127.0.0.1/ | grep -q "Ferron is installed successfully"
+test "$(stat -c %U /proc/$(systemctl show -P MainPID ferron))" = ferron
+for i in $(seq 10); do grep -q "\"GET / HTTP/1.1\" 200" /var/log/ferron/access.log && break; sleep 1; done
+grep -q "\"GET / HTTP/1.1\" 200" /var/log/ferron/access.log
+test "$(stat -c %U /var/log/ferron/access.log)" = ferron
+systemctl reload ferron
+curl -fsS --retry 5 --retry-connrefused http://127.0.0.1/ | grep -q "Ferron is installed successfully"
+systemctl is-active ferron
+'
 
 prepare() {
   local version=$1 raw=https://raw.githubusercontent.com/$UPSTREAM/$1 file b
