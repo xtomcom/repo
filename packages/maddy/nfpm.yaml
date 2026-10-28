@@ -1,0 +1,44 @@
+name: maddy
+arch: ${ARCH}
+version: ${VERSION}
+release: ${RELEASE}
+section: mail
+priority: optional
+maintainer: xTom <packages@xtom.com>
+vendor: xTom
+homepage: https://maddy.email
+license: GPL-3.0-or-later
+description: |-
+  Composable all-in-one mail server
+  Maddy implements SMTP (MTA/MX and submission), IMAP and the supporting
+  standards (DKIM, SPF, DMARC, DANE, MTA-STS) in a single daemon, with one
+  configuration file.
+contents:
+  - src: ./maddy
+    dst: /usr/bin/maddy
+    file_info: {mode: 0755}
+  # Legacy name kept by upstream's build.sh install.
+  - src: maddy
+    dst: /usr/bin/maddyctl
+    type: symlink
+  - src: ./maddy.conf
+    dst: /etc/maddy/maddy.conf
+    type: config|noreplace
+    file_info: {mode: 0644}
+  - src: ./maddy.service
+    dst: /usr/lib/systemd/system/maddy.service
+  - src: ./maddy@.service
+    dst: /usr/lib/systemd/system/maddy@.service
+  - src: ./sysusers.conf
+    dst: /usr/lib/sysusers.d/maddy.conf
+  - src: ./COPYING
+    dst: /usr/share/doc/maddy/copyright
+    packager: deb
+  - src: ./COPYING
+    dst: /usr/share/licenses/maddy/COPYING
+    type: license
+    packager: rpm
+scripts:
+  postinstall: ./postinstall.sh
+  preremove: ./preremove.sh
+  postremove: ./postremove.sh

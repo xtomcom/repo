@@ -1,0 +1,45 @@
+name: Build
+
+# Reusable: builds and tests every {package, version, arch} in the matrix on a
+# native runner of that architecture, then uploads the packages as artifacts.
+on:
+  workflow_call:
+    inputs:
+      matrix:
+        type: string
+        required: true
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: ${{ matrix.package }} ${{ matrix.version }} (${{ matrix.arch }})
+    runs-on: ${{ matrix.arch == 'arm64' && 'ubuntu-26.04-arm' || 'ubuntu-26.04' }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include: ${{ fromJSON(inputs.matrix) }}
+    env:
+      GH_TOKEN: ${{ github.token }}
+      PACKAGE: ${{ matrix.package }}
+      VERSION: ${{ matrix.version }}
+      ARCH: ${{ matrix.arch }}
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Install nfpm
+        run: sudo scripts/install-nfpm.sh
+
+      - name: Build
+        run: scripts/build.sh "$PACKAGE" "$VERSION" "$ARCH"
+
+      - name: Test
+        run: scripts/test.sh "$PACKAGE" "$VERSION" "$ARCH"
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: dist-${{ matrix.package }}-${{ matrix.version }}-${{ matrix.arch }}
+          path: dist/
+          if-no-files-found: error
+          retention-days: 7

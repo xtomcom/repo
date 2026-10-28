@@ -1,0 +1,39 @@
+name: dnsproxy
+arch: ${ARCH}
+version: ${VERSION}
+# Debian and Ubuntu ship an unrelated "dnsproxy" (1.17); the epoch makes ours win.
+epoch: 1
+release: ${RELEASE}
+section: net
+priority: optional
+maintainer: xTom <packages@xtom.com>
+vendor: xTom
+homepage: https://github.com/AdguardTeam/dnsproxy
+license: Apache-2.0
+description: |-
+  Simple DNS proxy with DoH, DoT, DoQ and DNSCrypt support
+  AdGuard's dnsproxy forwards DNS queries to plain DNS, DNS-over-TLS,
+  DNS-over-HTTPS, DNS-over-QUIC and DNSCrypt upstreams, and can serve those
+  protocols itself. The dnsproxy.service unit reads /etc/dnsproxy/config.yaml.
+contents:
+  - src: ./dnsproxy
+    dst: /usr/bin/dnsproxy
+    file_info: {mode: 0755}
+  - src: ./dnsproxy.service
+    dst: /usr/lib/systemd/system/dnsproxy.service
+  - src: ./config.yaml
+    dst: /etc/dnsproxy/config.yaml
+    type: config|noreplace
+  - src: ./README.md
+    dst: /usr/share/doc/dnsproxy/README.md
+  - src: ./LICENSE
+    dst: /usr/share/doc/dnsproxy/copyright
+    packager: deb
+  - src: ./LICENSE
+    dst: /usr/share/licenses/dnsproxy/LICENSE
+    type: license
+    packager: rpm
+scripts:
+  postinstall: ./postinstall.sh
+  preremove: ./preremove.sh
+  postremove: ./postremove.sh

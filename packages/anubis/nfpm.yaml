@@ -1,0 +1,44 @@
+name: anubis
+arch: ${ARCH}
+version: ${VERSION}
+release: ${RELEASE}
+section: httpd
+priority: optional
+maintainer: xTom <packages@xtom.com>
+vendor: xTom
+homepage: https://anubis.techaro.lol
+license: MIT
+description: |-
+  Web AI firewall that stops scraper bots with proof-of-work
+  Anubis weighs the souls of incoming HTTP requests and uses a proof-of-work
+  challenge to protect upstream resources from scraper bots. Each instance
+  runs as anubis@NAME.service configured by /etc/anubis/NAME.env.
+contents:
+  - src: ./anubis
+    dst: /usr/bin/anubis
+    file_info: {mode: 0755}
+  - src: ./anubis-robots2policy
+    dst: /usr/bin/anubis-robots2policy
+    file_info: {mode: 0755}
+  - src: ./anubis@.service
+    dst: /usr/lib/systemd/system/anubis@.service
+  - src: ./default.env
+    dst: /etc/anubis/default.env
+    type: config|noreplace
+  - src: ./README.md
+    dst: /usr/share/doc/anubis/README.md
+  - src: ./botPolicies.yaml
+    dst: /usr/share/doc/anubis/botPolicies.yaml
+  - src: ./data
+    dst: /usr/share/doc/anubis/data
+  - src: ./LICENSE
+    dst: /usr/share/doc/anubis/copyright
+    packager: deb
+  - src: ./LICENSE
+    dst: /usr/share/licenses/anubis/LICENSE
+    type: license
+    packager: rpm
+scripts:
+  postinstall: ./postinstall.sh
+  preremove: ./preremove.sh
+  postremove: ./postremove.sh

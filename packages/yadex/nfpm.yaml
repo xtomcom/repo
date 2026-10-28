@@ -1,0 +1,44 @@
+name: yadex
+arch: ${ARCH}
+version: ${VERSION}
+release: ${RELEASE}
+section: web
+priority: optional
+maintainer: xTom <packages@xtom.com>
+vendor: xTom
+homepage: https://github.com/ustclug/yadex
+license: GPL-3.0-or-later
+description: |-
+  Yet another directory index page generator
+  yadex generates index pages (HTML from a template, or JSON) for directories
+  and is meant to sit behind a web server such as nginx, which serves the
+  files themselves.
+contents:
+  - src: ./yadex
+    dst: /usr/bin/yadex
+    file_info: {mode: 0755}
+  - src: ./yadex.service
+    dst: /usr/lib/systemd/system/yadex.service
+  - src: ./config.toml
+    dst: /etc/yadex/config.toml
+    type: config|noreplace
+  - src: ./index.html
+    dst: /etc/yadex/index.html
+    type: config|noreplace
+  - src: ./README.md
+    dst: /usr/share/doc/yadex/README.md
+  - src: ./nginx.index.example.conf
+    dst: /usr/share/doc/yadex/nginx.index.example.conf
+  - src: ./nginx.try_files.example.conf
+    dst: /usr/share/doc/yadex/nginx.try_files.example.conf
+  - src: ./LICENSE
+    dst: /usr/share/doc/yadex/copyright
+    packager: deb
+  - src: ./LICENSE
+    dst: /usr/share/licenses/yadex/LICENSE
+    type: license
+    packager: rpm
+scripts:
+  postinstall: ./postinstall.sh
+  preremove: ./preremove.sh
+  postremove: ./postremove.sh

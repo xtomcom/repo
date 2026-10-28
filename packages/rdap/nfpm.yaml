@@ -1,0 +1,26 @@
+name: rdap
+arch: ${ARCH}
+version: ${VERSION}
+# Debian and Ubuntu ship OpenRDAP as "rdap"; the epoch makes ours always win.
+epoch: 1
+release: ${RELEASE}
+section: net
+priority: optional
+maintainer: xTom <packages@xtom.com>
+vendor: xTom
+homepage: https://github.com/xtomcom/rdap
+license: MIT
+description: |-
+  Modern RDAP client
+  Queries domain, IP and ASN registration data over RDAP (RFC 7480-7484).
+contents:
+  - src: ./rdap
+    dst: /usr/bin/rdap
+    file_info: {mode: 0755}
+  - src: ./LICENSE
+    dst: /usr/share/doc/rdap/copyright
+    packager: deb
+  - src: ./LICENSE
+    dst: /usr/share/licenses/rdap/LICENSE
+    type: license
+    packager: rpm

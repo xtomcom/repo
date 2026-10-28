@@ -1,0 +1,6 @@
+# packages/*/package.sh are sourced by scripts/lib.sh, which reads their
+# variables and calls their functions; TEST_CMD and the like are meant to be
+# single-quoted so they expand later, inside the test container.
+source-path=SCRIPTDIR
+external-sources=true
+disable=SC2016,SC2034,SC2153,SC2329

@@ -1,0 +1,39 @@
+name: see-cli
+arch: ${ARCH}
+version: ${VERSION}
+release: ${RELEASE}
+section: net
+priority: optional
+maintainer: xTom <packages@xtom.com>
+vendor: xTom
+homepage: https://github.com/sdotee/cli
+license: MIT
+description: |-
+  CLI client for the S.EE content sharing platform
+  Manages short URLs, text pastes, file uploads, QR codes and bio pages on S.EE.
+provides:
+  - see
+contents:
+  - src: ./see
+    dst: /usr/bin/see
+    file_info: {mode: 0755}
+  - src: ./see.bash
+    dst: /usr/share/bash-completion/completions/see
+  - src: ./see.zsh
+    dst: /usr/share/zsh/site-functions/_see
+  - src: ./see.fish
+    dst: /usr/share/fish/vendor_completions.d/see.fish
+  - src: ./README.md
+    dst: /usr/share/doc/see-cli/README.md
+  - src: ./LICENSE
+    dst: /usr/share/doc/see-cli/copyright
+    packager: deb
+  - src: ./LICENSE
+    dst: /usr/share/licenses/see-cli/LICENSE
+    type: license
+    packager: rpm
+overrides:
+  deb:
+    scripts:
+      preinstall: ./preinst
+      postremove: ./postrm
