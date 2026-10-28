@@ -23,21 +23,29 @@ jobs:
     runs-on: ubuntu-26.04
     outputs:
       matrix: ${{ steps.matrix.outputs.matrix }}
+      all: ${{ steps.matrix.outputs.all }}
     steps:
       - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
       - id: matrix
         env:
           GH_TOKEN: ${{ github.token }}
-        # Latest upstream release of every package, ignoring what is published.
-        run: echo "matrix=$(VERSIONS_FILE=/dev/null scripts/check.sh)" >> "$GITHUB_OUTPUT"
+          BASE: ${{ github.event.pull_request.base.sha || github.event.before }}
+        # Only the packages touched by this change, or all of them when
+        # shared code changed.
+        run: scripts/ci-matrix.sh "$BASE" >> "$GITHUB_OUTPUT"
 
   build:
     needs: matrix
+    if: needs.matrix.outputs.matrix != '[]'
     uses: ./.github/workflows/build.yml
     with:
       matrix: ${{ needs.matrix.outputs.matrix }}
 
   repo:
+    needs: matrix
+    if: needs.matrix.outputs.all == 'true'
     runs-on: ubuntu-26.04
     env:
       GH_TOKEN: ${{ github.token }}
