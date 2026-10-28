@@ -23,28 +23,48 @@ shopt -u nullglob
 [[ ${#debs[@]} -eq 1 ]] || die "expected one deb for $name $version $arch in $DIST, found ${#debs[@]}"
 [[ ${#rpms[@]} -eq 1 ]] || die "expected one rpm for $name $version $arch in $DIST, found ${#rpms[@]}"
 
+# A metapackage names the packages it depends on in TEST_DEPS. No repository
+# has them inside the test containers, so build them at the same version and
+# install them together with it.
+# built DEP: its .deb and .rpm in $DIST, one per line (a subshell, so loading
+# DEP doesn't replace this package's settings).
+built() (
+  load_package "$1"
+  shopt -s nullglob
+  printf '%s\n' "$DIST/${1}_"*"${version}-${RELEASE}_${arch}.deb" "$DIST/${1}-${version}-${RELEASE}.xtom."*"$(rpm_arch "$arch").rpm"
+)
+for dep in "${TEST_DEPS[@]}"; do
+  [[ $(built "$dep" | wc -l) -eq 2 ]] || "$ROOT/scripts/build.sh" "$dep" "$version" "$arch"
+  mapfile -t found < <(built "$dep")
+  [[ ${#found[@]} -eq 2 ]] || die "could not build $dep $version $arch"
+  debs+=("${found[0]}") rpms+=("${found[1]}")
+done
+# Paths as seen inside the containers, which mount $DIST at /pkg.
+pkgs() { local f out=(); for f in "$@"; do out+=("/pkg/${f##*/}"); done; echo "${out[*]}"; }
+
 run() {
-  local image=$1 file=$2 script=$3
-  log "test $(basename "$file") on $image"
+  local image=$1 files=$2 script=$3
+  log "test ${files//\/pkg\//} on $image"
   docker run --rm --platform "linux/$arch" \
-    -v "$file:/pkg/$(basename "$file"):ro" \
-    -e PKG="/pkg/$(basename "$file")" -e NAME="$name" -e TEST_CMD="$TEST_CMD" \
+    -v "$DIST:/pkg:ro" -e PKG="$files" -e NAME="$name" -e TEST_CMD="$TEST_CMD" \
     "$image" bash -euxc "$script"
 }
 
 for image in $DEB_IMAGES; do
-  run "$image" "${debs[0]}" '
+  run "$image" "$(pkgs "${debs[@]}")" '
     export DEBIAN_FRONTEND=noninteractive
     apt-get update -qq
-    apt-get install -y -qq "$PKG"
+    # shellcheck disable=SC2086 # PKG lists the package and its TEST_DEPS
+    apt-get install -y -qq $PKG
     bash -euxc "$TEST_CMD"
     apt-get purge -y -qq "$NAME"
   '
 done
 
 for image in $RPM_IMAGES; do
-  run "$image" "${rpms[0]}" '
-    dnf install -y -q "$PKG"
+  run "$image" "$(pkgs "${rpms[@]}")" '
+    # shellcheck disable=SC2086
+    dnf install -y -q $PKG
     bash -euxc "$TEST_CMD"
     dnf remove -y -q "$NAME"
   '
@@ -70,11 +90,11 @@ systemd_image() {
 }
 
 run_systemd() {
-  local image=$1 file=$2 install=$3 remove=$4 id state
-  log "service test $(basename "$file") on $image"
+  local image=$1 files=$2 install=$3 remove=$4 id state
+  log "service test ${files//\/pkg\//} on $image"
   id=$(docker run -d --platform "linux/$arch" --privileged --cgroupns=host \
     -v /sys/fs/cgroup:/sys/fs/cgroup:rw --tmpfs /run --tmpfs /run/lock --tmpfs /tmp \
-    -v "$file:/pkg/$(basename "$file"):ro" "$(systemd_image "$image")")
+    -v "$DIST:/pkg:ro" "$(systemd_image "$image")")
   # shellcheck disable=SC2064 # expand $id now
   trap "docker rm -f $id >/dev/null" RETURN
   for _ in $(seq 60); do
@@ -82,7 +102,7 @@ run_systemd() {
     [[ $state == running || $state == degraded ]] && break
     sleep 1
   done
-  docker exec -e PKG="/pkg/$(basename "$file")" -e NAME="$name" -e SERVICE_TEST="$SERVICE_TEST" \
+  docker exec -e PKG="$files" -e NAME="$name" -e SERVICE_TEST="$SERVICE_TEST" \
     -e INSTALL="$install" -e REMOVE="$remove" "$id" bash -euxc '
     out=$(eval "$INSTALL" 2>&1) || { echo "$out"; exit 1; }
     echo "$out" | grep -q "is installed but not started" || { echo "$out"; echo "no start notice"; exit 1; }
@@ -104,10 +124,10 @@ run_systemd() {
 }
 
 for image in $DEB_IMAGES; do
-  run_systemd "$image" "${debs[0]}" \
-    'apt-get update -qq && DEBIAN_FRONTEND=noninteractive apt-get install -y "$PKG"' \
+  run_systemd "$image" "$(pkgs "${debs[@]}")" \
+    'apt-get update -qq && DEBIAN_FRONTEND=noninteractive apt-get install -y $PKG' \
     'DEBIAN_FRONTEND=noninteractive apt-get purge -y -qq "$NAME"'
 done
 for image in $RPM_IMAGES; do
-  run_systemd "$image" "${rpms[0]}" 'dnf install -y "$PKG"' 'dnf remove -y -q "$NAME"'
+  run_systemd "$image" "$(pkgs "${rpms[@]}")" 'dnf install -y $PKG' 'dnf remove -y -q "$NAME"'
 done

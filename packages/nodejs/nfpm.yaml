@@ -1,0 +1,36 @@
+name: nodejs
+arch: ${ARCH}
+epoch: 1
+version: ${VERSION}
+release: ${RELEASE}
+section: javascript
+priority: optional
+maintainer: xTom <packages@xtom.com>
+vendor: xTom
+homepage: https://nodejs.org/
+license: MIT
+description: |-
+  Node.js JavaScript runtime and npm, newest LTS line (metapackage)
+  Installs nodejs-@MAJOR@, the newest Node.js LTS line, and moves to the next
+  LTS line when it is released. Epoch 1 puts it above the nodejs packages of
+  Debian, Ubuntu, NodeSource and RHEL, which it replaces.
+depends:
+  - nodejs-@MAJOR@
+overrides:
+  deb:
+    provides:
+      - nodejs-lts (= 1:${VERSION}-${RELEASE})
+  rpm:
+    provides:
+      - nodejs-lts = 1:${VERSION}-${RELEASE}
+    # This replaces RHEL's nodejs (as a newer version); these RHEL packages
+    # require its exact version. Only one package may obsolete each of them.
+    replaces:
+      - nodejs-npm
+      - npm
+      - nodejs-docs
+      - nodejs-devel
+      - nodejs-full-i18n
+deb:
+  fields:
+    Multi-Arch: allowed

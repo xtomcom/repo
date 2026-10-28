@@ -1,0 +1,124 @@
+# Template for packages/nodejs-NN; prepare() fills in the @...@ fields.
+name: nodejs-@MAJOR@
+arch: ${ARCH}
+epoch: 1
+version: ${VERSION}
+release: ${RELEASE}
+section: javascript
+priority: optional
+maintainer: xTom <packages@xtom.com>
+vendor: xTom
+homepage: https://nodejs.org/
+license: MIT
+description: |-
+  Node.js JavaScript runtime and npm, one LTS line per package
+  The official Node.js @MAJOR@ build from nodejs.org in /usr/lib/nodejs-@MAJOR@,
+  with the commands node-@MAJOR@, npm-@MAJOR@ and npx-@MAJOR@. Several Node.js
+  lines can be installed side by side; node, nodejs, npm and npx are managed
+  by update-alternatives (group "node") and default to the newest line.
+overrides:
+  deb:
+    depends: [libc6 (>= 2.28), libatomic1, libgcc-s1, libstdc++6]
+    suggests: [g++, make, python3]
+    provides:
+      - nodejs@MAJOR@ (= 1:${VERSION}-${RELEASE})
+      - nodejs (= 1:${VERSION}-${RELEASE})
+      - npm (= 1:@NPM@)
+    # Debian's, Ubuntu's and NodeSource's nodejs and npm (all without an
+    # epoch, so below 1:0~) own /usr/bin/node, npm and npx outright. They
+    # must be gone before postinst points those names at us. Our own
+    # packages provide nodejs and npm with epoch 1 and are not affected.
+    conflicts:
+      - nodejs (<< 1:0~)
+      - npm (<< 1:0~)
+      - nodejs-legacy
+      - node-corepack #corepack
+    scripts:
+      postinstall: ./alternatives.sh
+  rpm:
+    depends: [/usr/sbin/update-alternatives, libatomic, libstdc++]
+    suggests: [gcc-c++, make, python3]
+    provides:
+      - nodejs@MAJOR@ = 1:${VERSION}-${RELEASE}
+      - nodejs = 1:${VERSION}-${RELEASE}
+      - nodejs(engine) = ${VERSION}
+      - nodejs(abi) = @ABI@
+      - nodejs(abi@MAJOR@) = @ABI@
+      - npm = 1:@NPM@
+      - npm(npm) = @NPM@
+    # RHEL's nodejs (1:16 to 1:24 on EL9, 1:22 on EL10) owns /usr/bin/node.
+    # It must be upgraded to our nodejs metapackage (1:@LTS@ and up), which
+    # also obsoletes nodejs-npm & co. Only a real package named nodejs has
+    # the nodejs(ISA) provide; "nodejs < ..." would hit our other lines too.
+    conflicts:
+      - nodejs(@RPMISA@) < 1:@LTS@
+    # RHEL 10's versioned packages of this line ship /usr/bin/node-NN etc.
+    # (dnf matches obsoletes against package names only.)
+    replaces:
+      - nodejs@MAJOR@
+      - nodejs@MAJOR@-npm
+      - nodejs@MAJOR@-docs
+      - nodejs@MAJOR@-devel
+      - nodejs@MAJOR@-full-i18n
+deb:
+  compression: xz
+  fields:
+    Multi-Arch: allowed
+rpm:
+  compression: zstd
+  scripts:
+    # posttrans, not post: /usr/bin/node of an obsoleted RHEL nodejs is only
+    # removed after our post would have run.
+    posttrans: ./alternatives.sh
+scripts:
+  preremove: ./preremove.sh
+contents:
+  # Straight from the upstream tarball. type tree on rpm, so rpm owns the
+  # directories too and removes them on erase.
+  - src: ./node/
+    dst: /usr/lib/nodejs-@MAJOR@
+    packager: deb
+  - src: ./node/
+    dst: /usr/lib/nodejs-@MAJOR@
+    type: tree
+    packager: rpm
+  - src: ../lib/nodejs-@MAJOR@/bin/node
+    dst: /usr/bin/node-@MAJOR@
+    type: symlink
+  - src: ./npm-@MAJOR@
+    dst: /usr/bin/npm-@MAJOR@
+    file_info: {mode: 0755}
+  - src: ./npx-@MAJOR@
+    dst: /usr/bin/npx-@MAJOR@
+    file_info: {mode: 0755}
+  - src: ./corepack-@MAJOR@ #corepack
+    dst: /usr/bin/corepack-@MAJOR@ #corepack
+    file_info: {mode: 0755} #corepack
+  - src: ./LICENSE
+    dst: /usr/share/doc/nodejs-@MAJOR@/copyright
+    packager: deb
+  - src: ./LICENSE
+    dst: /usr/share/licenses/nodejs-@MAJOR@/LICENSE
+    type: license
+    packager: rpm
+  # The alternatives links, so rpm knows who owns them (and file
+  # dependencies on /usr/bin/node resolve); dpkg leaves them to
+  # update-alternatives.
+  - dst: /usr/bin/node
+    type: ghost
+    packager: rpm
+  - dst: /usr/bin/nodejs
+    type: ghost
+    packager: rpm
+  - dst: /usr/bin/npm
+    type: ghost
+    packager: rpm
+  - dst: /usr/bin/npx
+    type: ghost
+    packager: rpm
+  - dst: /usr/bin/corepack #corepack
+    type: ghost #corepack
+    packager: rpm #corepack
+  - dst: /usr/share/man/man1/node.1.gz
+    type: ghost
+    packager: rpm

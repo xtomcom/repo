@@ -1,0 +1,1 @@
+../_shared/nodejs/preremove.sh

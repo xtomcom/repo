@@ -1,37 +1,19 @@
 # shellcheck shell=bash
-# Official Go toolchain from go.dev, laid out like the distributions' own
-# golang packages so it upgrades them in place:
-#   deb: GOROOT /usr/lib/go-1.NN, /usr/lib/go and /usr/share/go symlinks,
-#        /usr/bin/{go,gofmt} -> ../lib/go-1.NN/bin/* (Debian golang-go/golang-1.NN-go)
-#   rpm: GOROOT /usr/lib/golang, /usr/bin/{go,gofmt} via alternatives (Fedora/RHEL golang-bin)
-# Both formats use epoch 2 (Debian's golang-defaults epoch; RHEL has none) so
-# we sort above the distribution packages.
-BRANCHES=(1.27 1.26)
-TEST_CMD='
-  v=$(basename "$PKG" | grep -oE "[0-9]+\.[0-9]+\.[0-9]+" | head -n1)
-  go version | grep -F "go version go$v linux/"
-  test "$(go env GOROOT)" = "$(readlink -f /usr/bin/go | sed "s|/bin/go$||")"
-  mkdir -p /tmp/hello && cd /tmp/hello
-  printf "package main\n\nimport \"fmt\"\n\nfunc main() { fmt.Println(\"hello from\", \"go\") }\n" > main.go
-  gofmt -d main.go
-  go run main.go | grep -Fx "hello from go"
-'
-
-godl_json() { curl -fsSL --retry 3 "https://go.dev/dl/?mode=json${1-}"; }
-
-versions() {
-  godl_json | jq -r '.[] | select(.stable) | .version | sub("^go"; "")'
-}
+# golang: metapackage that installs the newest Go minor version we carry
+# (golang-1.NN, the newest packages/golang-1.NN directory) and stands in for
+# the distributions' golang, golang-go and golang-bin. It has no files; its
+# version is that of the Go release it depends on. See README.md.
+# shellcheck source=../_shared/golang/common.sh
+source "$PKG_DIR/../_shared/golang/common.sh"
+BRANCHES=("$GO_LATEST")
+TEST_DEPS=("golang-$GO_LATEST")
+# The single golang package with the whole toolchain was published as
+# 2:1.27.3-1; this release turns it into the metapackage.
+RELEASE=2
 
 prepare() {
-  local version=$1 file sum
-  file=go$version.linux-$2.tar.gz
-  sum=$(godl_json "&include=all" | jq -r --arg f "$file" '.[].files[] | select(.filename == $f) | .sha256')
-  [[ -n $sum ]] || die "no checksum for $file on go.dev"
-  download "https://go.dev/dl/$file" "dl/$file"
-  verify_sha256 "dl/$file" "$sum"
-  tar -xzf "dl/$file"
-  [[ $(head -n1 go/VERSION) == "go$version" ]] || die "unexpected go/VERSION"
-  # GOROOT and symlink targets on Debian carry the major version (go-1.NN).
-  sed -i "s/@MAJOR@/${version%.*}/g" nfpm.yaml
+  godl_json "&include=all" | jq -e --arg v "go$1" 'any(.[]; .version == $v and .stable)' >/dev/null ||
+    die "go$1 is not a stable release on go.dev"
+  [[ ${1%.*} == "$GO_LATEST" ]] || die "golang follows Go $GO_LATEST, not $1"
+  go_subst "$GO_LATEST" nfpm.yaml
 }

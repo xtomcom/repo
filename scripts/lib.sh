@@ -75,6 +75,7 @@ load_package() {
   BRANCHES=()
   TEST_CMD=
   SERVICE_TEST=
+  TEST_DEPS=()
   unset -f versions prepare
   # Default: stable GitHub releases of $UPSTREAM.
   versions() { gh_versions "$UPSTREAM"; }

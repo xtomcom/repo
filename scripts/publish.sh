@@ -81,9 +81,12 @@ done
 
 # Packages in versions.json whose directory is gone from packages/ have been
 # retired (e.g. an upstream branch reached end of life): drop all their builds.
-RETIRED=$(jq -r 'keys[]' "$VERSIONS_FILE" 2>/dev/null | while read -r name; do
-  [[ -f $ROOT/packages/$name/package.sh ]] || echo "$name"
-done | xargs)
+RETIRED=
+if [[ -f $VERSIONS_FILE ]]; then
+  RETIRED=$(jq -r 'keys[]' "$VERSIONS_FILE" | while read -r name; do
+    [[ -f $ROOT/packages/$name/package.sh ]] || echo "$name"
+  done | xargs)
+fi
 [[ -z $RETIRED ]] || log "retire $RETIRED"
 
 # --- deb -------------------------------------------------------------------

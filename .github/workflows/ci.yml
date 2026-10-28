@@ -58,3 +58,43 @@ jobs:
         run: npm install -g @goreleaser/nfpm
       - name: Repository end-to-end test
         run: tests/repo.sh
+
+  # Side-by-side installs, switching, removal and upgrades from the distributions'
+  # packages. They take ~10 minutes each, so they only run when their packages
+  # (or shared code) changed.
+  nodejs:
+    needs: matrix
+    if: needs.matrix.outputs.all == 'true' || contains(needs.matrix.outputs.matrix, '"package":"nodejs')
+    runs-on: ubuntu-26.04
+    timeout-minutes: 45
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+      - name: Install nfpm
+        run: npm install -g @goreleaser/nfpm
+      - name: Node.js end-to-end test
+        run: tests/nodejs.sh
+
+  golang:
+    needs: matrix
+    if: needs.matrix.outputs.all == 'true' || contains(needs.matrix.outputs.matrix, '"package":"golang')
+    runs-on: ubuntu-26.04
+    timeout-minutes: 45
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          # tests/golang.sh builds the old single golang package from history.
+          fetch-depth: 0
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+      - name: Install nfpm
+        run: npm install -g @goreleaser/nfpm
+      - name: Go end-to-end test
+        run: tests/golang.sh

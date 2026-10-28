@@ -1,3 +1,4 @@
+# Metapackage; @LATEST@ is the newest golang-1.NN, see common.sh.
 name: golang
 arch: ${ARCH}
 epoch: 2
@@ -11,26 +12,32 @@ homepage: https://go.dev/
 license: BSD-3-Clause
 description: |-
   Go programming language compiler, tools and standard library
-  The official Go toolchain from go.dev, packaged with the same layout as the
-  distribution's golang packages, which it replaces.
+  Metapackage that installs the newest Go version from go.dev (golang-@LATEST@)
+  and replaces the distribution's golang packages. Other Go versions can be
+  installed alongside as golang-1.NN.
 overrides:
   deb:
+    depends:
+      - golang-@LATEST@ (>= 2:${VERSION})
+    # Debian's golang-defaults packages. golang-1.NN conflicts with the
+    # distribution's golang-go and golang-src (they own /usr/bin/go and
+    # /usr/share/go); providing them here, versioned, satisfies packages that
+    # depend on e.g. golang-go (>= 2:1.22~).
     provides:
       - go (= 2:${VERSION}-${RELEASE})
       - golang-go (= 2:${VERSION}-${RELEASE})
       - golang-src (= 2:${VERSION}-${RELEASE})
       - golang-doc (= 2:${VERSION}-${RELEASE})
-      - golang-@MAJOR@-go (= ${VERSION}-${RELEASE})
-      - golang-@MAJOR@-src (= ${VERSION}-${RELEASE})
-      - golang-@MAJOR@-doc (= ${VERSION}-${RELEASE})
-    conflicts: [golang-go, golang-src, golang-doc, golang-@MAJOR@-go, golang-@MAJOR@-src, golang-@MAJOR@-doc]
-    replaces: [golang-go, golang-src, golang-doc, golang-@MAJOR@-go, golang-@MAJOR@-src, golang-@MAJOR@-doc]
-    recommends: [g++, gcc, libc6-dev, pkgconf]
+    conflicts: [golang-go, golang-src, golang-doc]
+    replaces: [golang-go, golang-src, golang-doc]
   rpm:
+    depends:
+      - golang-@LATEST@ >= 2:${VERSION}
+    # Fedora/RHEL: golang + golang-bin + golang-src (+ race, misc, tests, docs).
     provides:
       - go = 2:${VERSION}-${RELEASE}
-      - golang-bin = 2:${VERSION}-${RELEASE}
       - golang-go = 2:${VERSION}-${RELEASE}
+      - golang-bin = 2:${VERSION}-${RELEASE}
       - golang-src = 2:${VERSION}-${RELEASE}
       - golang-race = 2:${VERSION}-${RELEASE}
       - golang-misc = 2:${VERSION}-${RELEASE}
@@ -43,56 +50,4 @@ overrides:
       - golang-misc < 2:${VERSION}-${RELEASE}
       - golang-tests < 2:${VERSION}-${RELEASE}
       - golang-docs < 2:${VERSION}-${RELEASE}
-    depends: [/usr/sbin/update-alternatives]
-    recommends: [gcc]
-    scripts:
-      preremove: ./preremove.sh
-contents:
-  # Debian: golang-1.NN-go/-src/-doc + golang-go + golang-src
-  - src: ./go/
-    dst: /usr/lib/go-@MAJOR@
-    packager: deb
-  - src: go-@MAJOR@
-    dst: /usr/lib/go
-    type: symlink
-    packager: deb
-  - src: ../lib/go-@MAJOR@
-    dst: /usr/share/go-@MAJOR@
-    type: symlink
-    packager: deb
-  - src: go-@MAJOR@
-    dst: /usr/share/go
-    type: symlink
-    packager: deb
-  - src: ../lib/go-@MAJOR@/bin/go
-    dst: /usr/bin/go
-    type: symlink
-    packager: deb
-  - src: ../lib/go-@MAJOR@/bin/gofmt
-    dst: /usr/bin/gofmt
-    type: symlink
-    packager: deb
-  - src: ./go/LICENSE
-    dst: /usr/share/doc/golang/copyright
-    packager: deb
-  # Fedora/RHEL: golang + golang-bin + golang-src (+ race, misc, tests, docs)
-  # type tree so rpm owns the directories too and removes them on erase
-  - src: ./go/
-    dst: /usr/lib/golang
-    type: tree
-    packager: rpm
-  - dst: /usr/bin/go
-    type: ghost
-    packager: rpm
-  - dst: /usr/bin/gofmt
-    type: ghost
-    packager: rpm
-  - src: ./go/LICENSE
-    dst: /usr/share/licenses/golang/LICENSE
-    type: license
-    packager: rpm
-rpm:
-  scripts:
-    # posttrans, not post: when this replaces the distribution's golang-bin,
-    # its preun removes the same /usr/lib/golang/bin/go alternative afterwards.
-    posttrans: ./alternatives.sh
+contents: []

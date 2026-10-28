@@ -19,9 +19,10 @@ DEB_IMAGES=${DEB_IMAGES:-"debian:13 ubuntu:26.04"}
 RPM_IMAGES=${RPM_IMAGES:-"rockylinux/rockylinux:10"}
 
 tmp=$(mktemp -d)
-containers=()
+# Containers are started from $(...) subshells, so track them by label.
+label=xtom-repo-test=$$
 cleanup() {
-  [[ ${#containers[@]} -eq 0 ]] || docker rm -f "${containers[@]}" >/dev/null
+  docker ps -aq --filter "label=$label" | xargs -r docker rm -f >/dev/null
   docker run --rm -v "$tmp:/t" "$PUBLISH_IMAGE" sh -c 'rm -rf /t/*'
   rm -rf "$tmp"
 }
@@ -29,11 +30,8 @@ trap cleanup EXIT
 
 # start IMAGE: a long-running container with the repo mounted at /repo; prints its id.
 start() {
-  local id
-  id=$(docker run -d -v "$ROOT:/src:ro" -v "$tmp:/t" -v "$tmp/www:/repo" \
-    -e NAME="$name" -e OLD="$old" -e NEW="$new" "$1" sleep infinity)
-  containers+=("$id")
-  echo "$id"
+  docker run -d --label "$label" -v "$ROOT:/src:ro" -v "$tmp:/t" -v "$tmp/www:/repo" \
+    -e NAME="$name" -e OLD="$old" -e NEW="$new" "$1" sleep infinity
 }
 run() { docker exec "$1" bash -euc "$2"; }
 

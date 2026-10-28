@@ -16,9 +16,12 @@ A GitHub Actions job checks every upstream once a day and publishes new releases
 | `dnsproxy` | [AdguardTeam/dnsproxy](https://github.com/AdguardTeam/dnsproxy) | amd64, arm64 | `dnsproxy.service`, config in `/etc/dnsproxy/config.yaml`, not enabled by default. Replaces the unrelated Debian/Ubuntu `dnsproxy` |
 | `ferron` | [ferronweb/ferron](https://github.com/ferronweb/ferron) | amd64, arm64 | `ferron.service`, config in `/etc/ferron.kdl`, not enabled by default |
 | `gitea` | [go-gitea/gitea](https://github.com/go-gitea/gitea) | amd64, arm64 | `gitea.service`, runs as `git`, not enabled by default |
-| `golang` | [go.dev](https://go.dev/dl/) | amd64, arm64 | Replaces the distribution's Go; also installable as `go` |
+| `golang` | [go.dev](https://go.dev/dl/) | amd64, arm64 | Metapackage for the newest Go (`golang-1.27`); also `go`. See [Go](#go) |
+| `golang-1.27`, `golang-1.26` | [go.dev](https://go.dev/dl/) | amd64, arm64 | One Go minor version each, installable side by side; also `go1.27`, `go-1.27`, `golang1.27` |
 | `goreleaser` | [goreleaser/goreleaser](https://github.com/goreleaser/goreleaser) | amd64, arm64 | |
 | `maddy` | [foxcpp/maddy](https://github.com/foxcpp/maddy) | amd64, arm64 | `maddy.service`, not enabled by default |
+| `nodejs` | [nodejs.org](https://nodejs.org/) | amd64, arm64 | Metapackage for the newest LTS (`nodejs-26`); also `nodejs-lts`. See [Node.js](#nodejs) |
+| `nodejs-26`, `nodejs-24`, `nodejs-22` | [nodejs.org](https://nodejs.org/) | amd64, arm64 | One LTS line each, with npm, installable side by side; also `nodejs26`, `nodejs24`, `nodejs22` |
 | `nfpm` | [goreleaser/nfpm](https://github.com/goreleaser/nfpm) | amd64, arm64 | The packager this repository is built with |
 | `rclone` | [rclone/rclone](https://github.com/rclone/rclone) | amd64, arm64 | |
 | `rdap` | [xtomcom/rdap](https://github.com/xtomcom/rdap) | amd64, arm64 | Replaces Debian/Ubuntu's `rdap` (OpenRDAP) |
@@ -120,6 +123,55 @@ sudo curl -o /etc/yum.repos.d/xtom.repo https://repo.xtom.com/rpm/xtom.repo
 sudo dnf install rdap see golang
 ```
 
+## Node.js
+
+Every Node.js LTS line is its own package, built from the official binaries on nodejs.org (signature-checked against the Node.js release keys) and laid out like Debian's and Fedora's packages. npm and npx come with each line, corepack with 22 and 24 (upstream dropped it in Node.js 25).
+
+| Package | Also known as | Installs |
+|---|---|---|
+| `nodejs` | `nodejs-lts` | The newest LTS line, currently `nodejs-26` |
+| `nodejs-26` | `nodejs26` | Node.js 26.x, supported until 2029-04-30 |
+| `nodejs-24` | `nodejs24` | Node.js 24.x, supported until 2028-04-30 |
+| `nodejs-22` | `nodejs22` | Node.js 22.x, supported until 2027-04-30 |
+
+```bash
+apt install nodejs        # newest LTS, follows future LTS lines too
+apt install nodejs-24     # stays on 24.x; upgrades never bring 26
+dnf install nodejs22      # aliases work with apt and dnf alike
+```
+
+- **Side by side:** each line lives in `/usr/lib/nodejs-NN` and the lines can be installed together. `node`, `npm`, `npx`, `corepack` and `nodejs` point at the newest installed line through alternatives; `node-24`, `npm-24`, `npx-24` always run that exact line.
+- **Switching the default:** `update-alternatives --config node` (Debian/Ubuntu) or `alternatives --config node` (RHEL). npm and npx switch with it. `--auto` goes back to the newest.
+- **Global npm packages** go to `/usr/local/lib/node_modules`, their commands to `/usr/local/bin`, as with Debian's npm. Native addons are built for one Node.js version: rebuild them (`npm rebuild -g`) after switching lines.
+- **Replacing other Node.js packages:** ours replace the distribution's `nodejs`/`npm` and NodeSource's `nodejs`. Use `apt install nodejs` (or `apt full-upgrade`) rather than `apt upgrade` for the switch, and remove NodeSource's apt pin (`/etc/apt/preferences.d/nodejs`, `nsolid`) first, or apt keeps preferring NodeSource. On RHEL 9, an enabled `nodejs` module stream hides our packages: `dnf module reset nodejs`.
+- **End of life:** when a line reaches end of life it leaves the repository. Installed copies keep working without updates.
+- **Names:** aliases are resolved at install time. `dpkg -l`, `rpm -qa` and removal use the real name, e.g. `apt remove nodejs-24`.
+
+Details, including what exactly is replaced on each distribution: [packages/nodejs/README.md](packages/nodejs/README.md).
+
+## Go
+
+Every supported Go minor version is its own package, from the official go.dev tarballs (SHA-256 checked), laid out like Debian's `golang-1.NN` packages.
+
+| Package | Also known as | Installs |
+|---|---|---|
+| `golang` | `go`, and provides `golang-go` | The newest Go, currently `golang-1.27` |
+| `golang-1.27` | `golang1.27`, `go1.27`, `go-1.27`, `golang-1.27-go` | Go 1.27.x |
+| `golang-1.26` | `golang1.26`, `go1.26`, `go-1.26`, `golang-1.26-go` | Go 1.26.x |
+
+```bash
+apt install golang        # newest Go, follows future minor versions too
+apt install golang-1.26   # stays on 1.26.x
+dnf install go1.26        # aliases work with apt and dnf alike
+```
+
+- **Side by side:** GOROOT is `/usr/lib/go-1.NN`. `go`, `gofmt` and `/usr/lib/go` point at the newest installed version through alternatives; `go-1.26` and `gofmt-1.26` always run that version. Go finds its GOROOT from the binary, so there is nothing to set.
+- **Switching the default:** `update-alternatives --config go` (Debian/Ubuntu) or `alternatives --config go` (RHEL).
+- **Replacing other Go packages:** `golang` replaces the distribution's `golang-go`/`golang-src` (Debian, Ubuntu) and `golang`/`golang-bin` (RHEL), and the single `golang` package this repository published before; a normal upgrade moves you over. On RHEL, remove `go-toolset` first.
+- **End of life:** Go supports the two newest minor versions. When Go 1.28 comes out, `golang` moves to `golang-1.28` and `golang-1.26` leaves the repository; installed copies keep working without updates.
+
+Details: [packages/golang/README.md](packages/golang/README.md).
+
 ## How it works
 
 ```
@@ -144,6 +196,7 @@ Each package is a directory under `packages/` with:
 - When upstream ships both glibc and musl builds, use the glibc one and call `check_glibc` on it in `prepare`: it fails the build if the binary needs a newer glibc than the oldest supported system has (2.34, EL9). Use the musl build only when the glibc one needs more than that. Never ship both.
 - Any unit files and maintainer scripts the package needs.
 - Optionally a `README.md` with setup notes for users. It stays in this repository and is never packaged.
+- A metapackage sets `TEST_DEPS` to the packages it depends on, so `scripts/test.sh` builds and installs them with it. Files shared by several packages (the Node.js lines, the Go versions) live in `packages/_shared/NAME/` and are linked into each package directory.
 
 Build and test locally. You need Docker and nfpm (`npm install -g @goreleaser/nfpm`, or `apt install nfpm` from this repository):
 
@@ -151,6 +204,8 @@ Build and test locally. You need Docker and nfpm (`npm install -g @goreleaser/nf
 scripts/build.sh rdap 1.0.9
 scripts/test.sh rdap 1.0.9 amd64
 tests/repo.sh       # end-to-end: publish to a local directory, install and upgrade with apt and dnf
+tests/nodejs.sh     # Node.js lines: aliases, side by side, switching, removal, replacing distro/NodeSource
+tests/golang.sh     # Go versions: the same, plus the upgrade from the old single golang package
 tests/retention.sh  # which builds are kept per branch
 ```
 

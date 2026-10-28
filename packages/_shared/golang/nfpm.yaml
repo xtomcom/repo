@@ -1,0 +1,101 @@
+# One Go minor version, co-installable with the others. Placeholders: @BRANCH@
+# (1.NN), @PRIORITY@, @LATEST@ (newest branch we carry), @SPLIT@; see common.sh.
+name: golang-@BRANCH@
+arch: ${ARCH}
+epoch: 2
+version: ${VERSION}
+release: ${RELEASE}
+section: golang
+priority: optional
+maintainer: xTom <packages@xtom.com>
+vendor: xTom
+homepage: https://go.dev/
+license: BSD-3-Clause
+description: |-
+  Go programming language compiler, tools and standard library, one minor version
+  The official Go @BRANCH@ toolchain from go.dev in /usr/lib/go-@BRANCH@, with the
+  go-@BRANCH@ and gofmt-@BRANCH@ commands. Several Go versions can be installed
+  side by side; /usr/bin/go, /usr/bin/gofmt and /usr/lib/go are managed by
+  update-alternatives and point to the newest one unless chosen otherwise.
+overrides:
+  deb:
+    # golang-1.NN-go/-src/-doc are Debian's and Ubuntu's names for the same
+    # version; Ubuntu also has a golang-1.NN metapackage, which this upgrades.
+    provides:
+      - golang@BRANCH@ (= 2:${VERSION}-${RELEASE})
+      - go@BRANCH@ (= 2:${VERSION}-${RELEASE})
+      - go-@BRANCH@ (= 2:${VERSION}-${RELEASE})
+      - golang-@BRANCH@-go (= ${VERSION}-${RELEASE})
+      - golang-@BRANCH@-src (= ${VERSION}-${RELEASE})
+      - golang-@BRANCH@-doc (= ${VERSION}-${RELEASE})
+    # The distribution's golang-go and golang-src own /usr/bin/go, gofmt,
+    # /usr/lib/go and /usr/share/go, which are our alternatives. They are
+    # versioned 2:1.NN~N; the bound spares our golang metapackage, which
+    # provides golang-go and golang-src as 2:1.NN.N.
+    conflicts:
+      - golang-@BRANCH@-go
+      - golang-@BRANCH@-src
+      - golang-@BRANCH@-doc
+      - golang-go (<< 2:@LATEST@.0~)
+      - golang-src (<< 2:@LATEST@.0~)
+    replaces:
+      - golang-@BRANCH@-go
+      - golang-@BRANCH@-src
+      - golang-@BRANCH@-doc
+      - golang (<< @SPLIT@)
+    recommends: [g++, gcc, libc6-dev, pkgconf]
+    scripts:
+      postinstall: ./postinst.sh
+      preremove: ./prerm.sh
+  rpm:
+    provides:
+      - golang@BRANCH@ = 2:${VERSION}-${RELEASE}
+      - go@BRANCH@ = 2:${VERSION}-${RELEASE}
+      - go-@BRANCH@ = 2:${VERSION}-${RELEASE}
+    depends: [/usr/sbin/update-alternatives]
+    recommends: [gcc]
+    scripts:
+      preremove: ./preremove.sh
+deb:
+  # Takes over /usr/lib/go-1.NN from the old single golang package, whose
+  # /usr/bin/go link must be gone (golang upgraded to the metapackage) before
+  # our alternatives are set up.
+  breaks:
+    - golang (<< @SPLIT@)
+rpm:
+  scripts:
+    # posttrans, not post: replaced packages run their preun afterwards.
+    posttrans: ./posttrans.sh
+contents:
+  # type tree: the package owns the directories too and removes them.
+  - src: ./go/
+    dst: /usr/lib/go-@BRANCH@
+    type: tree
+  - src: ../lib/go-@BRANCH@/bin/go
+    dst: /usr/bin/go-@BRANCH@
+    type: symlink
+  - src: ../lib/go-@BRANCH@/bin/gofmt
+    dst: /usr/bin/gofmt-@BRANCH@
+    type: symlink
+  # Debian's golang-1.NN-src has the sources in /usr/share/go-1.NN.
+  - src: ../lib/go-@BRANCH@
+    dst: /usr/share/go-@BRANCH@
+    type: symlink
+    packager: deb
+  - src: ./go/LICENSE
+    dst: /usr/share/doc/golang-@BRANCH@/copyright
+    packager: deb
+  # The alternatives links, owned like Fedora's golang-bin owns them.
+  - dst: /usr/bin/go
+    type: ghost
+    packager: rpm
+  - dst: /usr/bin/gofmt
+    type: ghost
+    packager: rpm
+  - dst: /usr/lib/go
+    type: ghost
+    packager: rpm
+  - src: ./go/LICENSE
+    dst: /usr/share/licenses/golang-@BRANCH@/LICENSE
+    type: license
+    packager: rpm
