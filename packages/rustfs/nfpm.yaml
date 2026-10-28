@@ -1,0 +1,40 @@
+name: rustfs
+arch: ${ARCH}
+version: ${VERSION}
+release: ${RELEASE}
+section: net
+priority: optional
+maintainer: xTom <packages@xtom.com>
+vendor: xTom
+homepage: https://rustfs.com
+license: Apache-2.0
+description: |-
+  High-performance S3-compatible distributed object storage
+  RustFS is an object storage server written in Rust, compatible with the
+  S3 API and with MinIO deployments. The rustfs.service unit reads its
+  settings from /etc/default/rustfs and stores data in /data/rustfs.
+contents:
+  - src: ./rustfs
+    dst: /usr/bin/rustfs
+    file_info: {mode: 0755}
+  - src: ./rustfs.service
+    dst: /usr/lib/systemd/system/rustfs.service
+  - src: ./default
+    dst: /etc/default/rustfs
+    type: config|noreplace
+    file_info: {mode: 0600}
+  - src: ./sysusers.conf
+    dst: /usr/lib/sysusers.d/rustfs.conf
+  - src: ./README.md
+    dst: /usr/share/doc/rustfs/README.md
+  - src: ./LICENSE
+    dst: /usr/share/doc/rustfs/copyright
+    packager: deb
+  - src: ./LICENSE
+    dst: /usr/share/licenses/rustfs/LICENSE
+    type: license
+    packager: rpm
+scripts:
+  postinstall: ./postinstall.sh
+  preremove: ./preremove.sh
+  postremove: ./postremove.sh

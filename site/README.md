@@ -85,7 +85,7 @@ sudo dnf install rdap see golang
 
 ## Services
 
-Packages that ship a service (anubis, dnsproxy, gitea, maddy, yadex, yuki) do not start it on install. Edit the configuration first, then enable it with `systemctl enable --now <service>`. The exact steps are printed when the package is installed.
+Packages that ship a service (anubis, caddy, dnsproxy, ferron, gitea, maddy, rustfs, versitygw, yadex, yuki) do not start it on install. Edit the configuration first, then enable it with `systemctl enable --now <service>`. The exact steps are printed when the package is installed.
 
 ## Issues
 

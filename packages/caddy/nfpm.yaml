@@ -1,0 +1,67 @@
+name: caddy
+arch: ${ARCH}
+version: ${VERSION}
+release: ${RELEASE}
+section: httpd
+priority: optional
+maintainer: xTom <packages@xtom.com>
+vendor: xTom
+homepage: https://caddyserver.com
+license: Apache-2.0
+description: |-
+  Fast, extensible web server with automatic HTTPS
+  Caddy is a multi-purpose web server written in Go. caddy.service serves
+  /etc/caddy/Caddyfile; caddy-api.service is configured through the admin API.
+overrides:
+  # Same Depends/Provides as Debian's caddy and Fedora's caddy.
+  deb:
+    depends: [libnss3-tools, media-types, passwd]
+    provides: [httpd]
+  rpm:
+    provides: [webserver]
+contents:
+  - src: ./caddy
+    dst: /usr/bin/caddy
+    file_info: {mode: 0755}
+  - src: ./caddy.service
+    dst: /usr/lib/systemd/system/caddy.service
+  - src: ./caddy-api.service
+    dst: /usr/lib/systemd/system/caddy-api.service
+  - src: ./sysusers.conf
+    dst: /usr/lib/sysusers.d/caddy.conf
+  - src: ./Caddyfile
+    dst: /etc/caddy/Caddyfile
+    type: config|noreplace
+  - src: ./index.html
+    dst: /usr/share/caddy/index.html
+  # Fedora owns the state directory; the user exists by then (preinstall).
+  - dst: /var/lib/caddy
+    type: dir
+    file_info: {mode: 0750, owner: caddy, group: caddy}
+    packager: rpm
+  - src: ./man/*.8.gz
+    dst: /usr/share/man/man8/
+  - src: ./caddy.bash
+    dst: /usr/share/bash-completion/completions/caddy
+  - src: ./caddy.zsh
+    dst: /usr/share/zsh/vendor-completions/_caddy
+    packager: deb
+  - src: ./caddy.zsh
+    dst: /usr/share/zsh/site-functions/_caddy
+    packager: rpm
+  - src: ./caddy.fish
+    dst: /usr/share/fish/vendor_completions.d/caddy.fish
+  - src: ./README.md
+    dst: /usr/share/doc/caddy/README.md
+  - src: ./LICENSE
+    dst: /usr/share/doc/caddy/copyright
+    packager: deb
+  - src: ./LICENSE
+    dst: /usr/share/licenses/caddy/LICENSE
+    type: license
+    packager: rpm
+scripts:
+  preinstall: ./preinstall.sh
+  postinstall: ./postinstall.sh
+  preremove: ./preremove.sh
+  postremove: ./postremove.sh

@@ -1,0 +1,53 @@
+name: versitygw
+arch: ${ARCH}
+version: ${VERSION}
+# Upstream's own .deb/.rpm use epoch 1; the same epoch lets ours replace them.
+epoch: 1
+release: ${RELEASE}
+section: net
+priority: optional
+maintainer: xTom <packages@xtom.com>
+vendor: xTom
+homepage: https://github.com/versity/versitygw
+license: Apache-2.0
+description: |-
+  S3 gateway for POSIX, ScoutFS, Azure and S3 backends
+  The Versity S3 Gateway translates AWS S3 API requests to backend storage
+  such as a POSIX file system. Each instance of the versitygw@.service
+  template reads /etc/versitygw.d/<instance>.conf.
+contents:
+  - src: ./versitygw
+    dst: /usr/bin/versitygw
+    file_info: {mode: 0755}
+  - src: ./versitygw@.service
+    dst: /usr/lib/systemd/system/versitygw@.service
+  - dst: /etc/versitygw.d
+    type: dir
+    file_info: {mode: 0700}
+  - src: ./example.conf
+    dst: /etc/versitygw.d/example.conf
+    type: config|noreplace
+  - src: ./example-iam.conf
+    dst: /etc/versitygw.d/example-iam.conf
+    type: config|noreplace
+  - src: ./versitygw.sh
+    dst: /usr/share/bash-completion/completions/versitygw
+  - src: ./versitygw.zsh
+    dst: /usr/share/zsh/site-functions/_versitygw
+  - src: ./versitygw.fish
+    dst: /usr/share/fish/vendor_completions.d/versitygw.fish
+  - src: ./README.md
+    dst: /usr/share/doc/versitygw/README.md
+  - src: ./NOTICE
+    dst: /usr/share/doc/versitygw/NOTICE
+  - src: ./LICENSE
+    dst: /usr/share/doc/versitygw/copyright
+    packager: deb
+  - src: ./LICENSE
+    dst: /usr/share/licenses/versitygw/LICENSE
+    type: license
+    packager: rpm
+scripts:
+  postinstall: ./postinstall.sh
+  preremove: ./preremove.sh
+  postremove: ./postremove.sh

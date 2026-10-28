@@ -12,15 +12,21 @@ A GitHub Actions job checks every upstream once a day and publishes new releases
 | Package | Upstream | Architectures | Notes |
 |---|---|---|---|
 | `anubis` | [TecharoHQ/anubis](https://github.com/TecharoHQ/anubis) | amd64, arm64 | `anubis@.service` template, not enabled by default |
+| `caddy` | [caddyserver/caddy](https://github.com/caddyserver/caddy) | amd64, arm64 | `caddy.service` and `caddy-api.service`, Debian layout, not enabled by default |
 | `dnsproxy` | [AdguardTeam/dnsproxy](https://github.com/AdguardTeam/dnsproxy) | amd64, arm64 | `dnsproxy.service`, config in `/etc/dnsproxy/config.yaml`, not enabled by default. Replaces the unrelated Debian/Ubuntu `dnsproxy` |
+| `ferron` | [ferronweb/ferron](https://github.com/ferronweb/ferron) | amd64, arm64 | `ferron.service`, config in `/etc/ferron.kdl`, not enabled by default |
 | `gitea` | [go-gitea/gitea](https://github.com/go-gitea/gitea) | amd64, arm64 | `gitea.service`, runs as `git`, not enabled by default |
 | `golang` | [go.dev](https://go.dev/dl/) | amd64, arm64 | Replaces the distribution's Go; also installable as `go` |
+| `goreleaser` | [goreleaser/goreleaser](https://github.com/goreleaser/goreleaser) | amd64, arm64 | |
 | `maddy` | [foxcpp/maddy](https://github.com/foxcpp/maddy) | amd64, arm64 | `maddy.service`, not enabled by default |
 | `nfpm` | [goreleaser/nfpm](https://github.com/goreleaser/nfpm) | amd64, arm64 | The packager this repository is built with |
 | `rclone` | [rclone/rclone](https://github.com/rclone/rclone) | amd64, arm64 | |
 | `rdap` | [xtomcom/rdap](https://github.com/xtomcom/rdap) | amd64, arm64 | Replaces Debian/Ubuntu's `rdap` (OpenRDAP) |
+| `rustfs` | [rustfs/rustfs](https://github.com/rustfs/rustfs) | amd64, arm64 | `rustfs.service`, config in `/etc/default/rustfs`, not enabled by default |
 | `see` | [sdotee/cli](https://github.com/sdotee/cli) | amd64, arm64 | Also installable as `see-cli` |
-| `yadex` | [ustclug/yadex](https://github.com/ustclug/yadex) | amd64 | Upstream ships no arm64 build |
+| `versitygw` | [versity/versitygw](https://github.com/versity/versitygw) | amd64, arm64 | `versitygw@.service` template, configs in `/etc/versitygw.d/`, not enabled by default |
+| `xcaddy` | [caddyserver/xcaddy](https://github.com/caddyserver/xcaddy) | amd64, arm64 | Needs Go (`golang`) to build Caddy |
+| `yadex` | [ustclug/yadex](https://github.com/ustclug/yadex) | amd64 | Upstream ships no arm64 build. [Setup notes](packages/yadex/README.md) |
 | `yuki` | [ustclug/Yuki](https://github.com/ustclug/Yuki) | amd64 | `yukid` and `yukictl`; upstream ships no arm64 build |
 
 Package names, file locations and versions follow Debian's and Fedora/EPEL's own packaging of the same software. When your distribution also ships one of these packages, ours carries the newer upstream release, so a plain `apt upgrade` / `dnf upgrade` moves you to it.
@@ -135,7 +141,9 @@ Each package is a directory under `packages/` with:
 
 - `package.sh` sets `UPSTREAM`, `BRANCHES` (the release branches we carry, e.g. `(1.27 1.26)`), `ARCHS` and `TEST_CMD`, and defines `prepare VERSION ARCH`, which downloads and verifies the upstream files. It can also override `versions` when the upstream isn't a GitHub release, as for Go.
 - `nfpm.yaml` is the [nfpm](https://nfpm.goreleaser.com/) package definition.
+- When upstream ships both glibc and musl builds, use the glibc one and call `check_glibc` on it in `prepare`: it fails the build if the binary needs a newer glibc than the oldest supported system has (2.34, EL9). Use the musl build only when the glibc one needs more than that. Never ship both.
 - Any unit files and maintainer scripts the package needs.
+- Optionally a `README.md` with setup notes for users. It stays in this repository and is never packaged.
 
 Build and test locally. You need Docker and nfpm (`npm install -g @goreleaser/nfpm`, or `apt install nfpm` from this repository):
 

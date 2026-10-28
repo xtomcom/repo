@@ -1,0 +1,39 @@
+name: xcaddy
+arch: ${ARCH}
+version: ${VERSION}
+release: ${RELEASE}
+section: devel
+priority: optional
+maintainer: xTom <packages@xtom.com>
+vendor: xTom
+homepage: https://github.com/caddyserver/xcaddy
+license: Apache-2.0
+description: |-
+  Build Caddy with plugins
+  xcaddy compiles custom Caddy binaries with extra modules and runs Caddy
+  while developing plugins. It drives the Go toolchain to do so.
+# Neither Debian nor Fedora ship xcaddy. golang-go is Debian's Go package and
+# is provided by RHEL/Fedora's golang and by our own golang package.
+depends:
+  - golang-go
+recommends:
+  - git
+contents:
+  - src: ./xcaddy
+    dst: /usr/bin/xcaddy
+    file_info: {mode: 0755}
+  - src: ./xcaddy.bash
+    dst: /usr/share/bash-completion/completions/xcaddy
+  - src: ./xcaddy.zsh
+    dst: /usr/share/zsh/site-functions/_xcaddy
+  - src: ./xcaddy.fish
+    dst: /usr/share/fish/vendor_completions.d/xcaddy.fish
+  - src: ./README.md
+    dst: /usr/share/doc/xcaddy/README.md
+  - src: ./LICENSE
+    dst: /usr/share/doc/xcaddy/copyright
+    packager: deb
+  - src: ./LICENSE
+    dst: /usr/share/licenses/xcaddy/LICENSE
+    type: license
+    packager: rpm

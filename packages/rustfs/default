@@ -1,0 +1,10 @@
+# RustFS environment configuration, read by rustfs.service.
+# See https://docs.rustfs.com for all RUSTFS_* variables.
+# RUSTFS_ACCESS_KEY=<changeme>
+# RUSTFS_SECRET_KEY=<changeme>
+# RUSTFS_VOLUMES="/data/rustfs"
+# RUSTFS_ADDRESS=":9000"
+# RUSTFS_CONSOLE_ADDRESS=":9001"
+# RUSTFS_CONSOLE_ENABLE=true
+# RUSTFS_OBS_LOGGER_LEVEL=error
+# RUSTFS_OBS_LOG_DIRECTORY="/var/log/rustfs/"

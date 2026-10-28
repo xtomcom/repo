@@ -27,18 +27,39 @@ verify_sha256() {
   echo "$2  $1" | sha256sum -c --quiet - || die "sha256 mismatch for $1"
 }
 
-# verify_sums SUMS_FILE FILE: check FILE against a sha256sum-style list.
+# verify_sums SUMS_FILE FILE: check FILE against a sha256sum- or
+# sha512sum-style list; the length of the hash tells which.
 verify_sums() {
   local name sum
   name=$(basename "$2")
   sum=$(awk -v f="$name" '$2 == f || $2 == "*" f || $2 == "./" f { print $1; exit }' "$1")
   [[ -n $sum ]] || die "no checksum for $name in $(basename "$1")"
-  verify_sha256 "$2" "$sum"
+  case ${#sum} in
+    64) verify_sha256 "$2" "$sum" ;;
+    128) echo "$sum  $2" | sha512sum -c --quiet - || die "sha512 mismatch for $2" ;;
+    *) die "unrecognised checksum for $name in $(basename "$1")" ;;
+  esac
+}
+
+# Oldest glibc among the supported releases (EL9: 2.34, Ubuntu 22.04: 2.35,
+# Debian 12: 2.36). Upstream glibc builds must not need anything newer.
+MAX_GLIBC=2.34
+
+# check_glibc FILE...: fail if a dynamically linked binary needs a glibc newer
+# than MAX_GLIBC. Use it in prepare() for every gnu (non-musl) build.
+check_glibc() {
+  local f need
+  for f in "$@"; do
+    need=$(objdump -T "$f" 2>/dev/null | grep -o 'GLIBC_[0-9.]*' | cut -d_ -f2 | sort -uV | tail -n1)
+    [[ -z $need ]] && continue
+    [[ $(printf '%s\n%s\n' "$need" "$MAX_GLIBC" | sort -V | tail -n1) == "$MAX_GLIBC" ]] ||
+      die "$(basename "$f") needs glibc $need, newer than the supported $MAX_GLIBC; use the musl build"
+  done
 }
 
 # gh_versions OWNER/REPO [COUNT]: recent stable release versions, newest first, "v" stripped.
 gh_versions() {
-  gh api "repos/$1/releases?per_page=${2:-30}" \
+  gh api "repos/$1/releases?per_page=${2:-100}" \
     --jq '.[] | select(.draft | not) | select(.prerelease | not) | .tag_name | sub("^v"; "")'
 }
 

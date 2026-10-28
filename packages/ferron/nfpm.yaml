@@ -1,0 +1,53 @@
+name: ferron
+arch: ${ARCH}
+version: ${VERSION}
+release: ${RELEASE}
+section: httpd
+priority: optional
+maintainer: xTom <packages@xtom.com>
+vendor: xTom
+homepage: https://ferron.sh
+license: MIT
+description: |-
+  Fast, memory-safe web server with automatic TLS
+  Ferron serves static files, reverse proxies and FastCGI/PHP backends, and
+  obtains TLS certificates automatically. The ferron.service unit reads
+  /etc/ferron.kdl and serves /var/www/ferron by default.
+depends:
+  - ca-certificates
+contents:
+  - src: ./ferron
+    dst: /usr/sbin/ferron
+    file_info: {mode: 0755}
+  - src: ./ferron-passwd
+    dst: /usr/sbin/ferron-passwd
+    file_info: {mode: 0755}
+  - src: ./ferron-precompress
+    dst: /usr/sbin/ferron-precompress
+    file_info: {mode: 0755}
+  - src: ./ferron-yaml2kdl
+    dst: /usr/sbin/ferron-yaml2kdl
+    file_info: {mode: 0755}
+  - src: ./ferron.service
+    dst: /usr/lib/systemd/system/ferron.service
+  - src: ./ferron.kdl
+    dst: /etc/ferron.kdl
+    type: config|noreplace
+  - src: ./sysusers.conf
+    dst: /usr/lib/sysusers.d/ferron.conf
+  # Default webroot, copied to /var/www/ferron on first install.
+  - src: ./wwwroot
+    dst: /usr/share/ferron/wwwroot
+  - src: ./README.md
+    dst: /usr/share/doc/ferron/README.md
+  - src: ./LICENSE
+    dst: /usr/share/doc/ferron/copyright
+    packager: deb
+  - src: ./LICENSE
+    dst: /usr/share/licenses/ferron/LICENSE
+    type: license
+    packager: rpm
+scripts:
+  postinstall: ./postinstall.sh
+  preremove: ./preremove.sh
+  postremove: ./postremove.sh

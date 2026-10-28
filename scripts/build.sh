@@ -24,6 +24,8 @@ for arch in "${archs[@]}"; do
   rm -rf "$stage"
   mkdir -p "$stage/dl"
   cp -r "$PKG_DIR/." "$stage/"
+  # packages/NAME/README.md documents the package in this repository only.
+  rm -f "$stage/README.md"
 
   log "prepare $name $version $arch"
   (cd "$stage" && prepare "$version" "$arch")
