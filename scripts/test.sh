@@ -25,22 +25,25 @@ shopt -u nullglob
 
 # A metapackage names the packages it depends on in TEST_DEPS. No repository
 # has them inside the test containers, so build them at the same version and
-# install them together with it.
-# built DEP: its .deb and .rpm in $DIST, one per line (a subshell, so loading
+# install them together with it. They are built into $DIST/.deps: their own CI
+# jobs upload the real ones, and hidden paths are neither uploaded as
+# artifacts nor published, so the two builds can never overwrite each other.
+deps=$DIST/.deps
+# built DEP: its .deb and .rpm in $deps, one per line (a subshell, so loading
 # DEP doesn't replace this package's settings).
 built() (
   load_package "$1"
   shopt -s nullglob
-  printf '%s\n' "$DIST/${1}_"*"${version}-${RELEASE}_${arch}.deb" "$DIST/${1}-${version}-${RELEASE}.xtom."*"$(rpm_arch "$arch").rpm"
+  printf '%s\n' "$deps/${1}_"*"${version}-${RELEASE}_${arch}.deb" "$deps/${1}-${version}-${RELEASE}.xtom."*"$(rpm_arch "$arch").rpm"
 )
 for dep in "${TEST_DEPS[@]}"; do
-  [[ $(built "$dep" | wc -l) -eq 2 ]] || "$ROOT/scripts/build.sh" "$dep" "$version" "$arch"
+  [[ $(built "$dep" | wc -l) -eq 2 ]] || DIST=$deps "$ROOT/scripts/build.sh" "$dep" "$version" "$arch"
   mapfile -t found < <(built "$dep")
   [[ ${#found[@]} -eq 2 ]] || die "could not build $dep $version $arch"
   debs+=("${found[0]}") rpms+=("${found[1]}")
 done
 # Paths as seen inside the containers, which mount $DIST at /pkg.
-pkgs() { local f out=(); for f in "$@"; do out+=("/pkg/${f##*/}"); done; echo "${out[*]}"; }
+pkgs() { local f out=(); for f in "$@"; do out+=("/pkg/${f#"$DIST"/}"); done; echo "${out[*]}"; }
 
 run() {
   local image=$1 files=$2 script=$3

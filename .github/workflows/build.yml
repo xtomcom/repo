@@ -47,5 +47,7 @@ jobs:
         with:
           name: dist-${{ matrix.package }}-${{ matrix.version }}-${{ matrix.arch }}
           path: dist/
+          # dist/.deps holds TEST_DEPS builds; each package's own job uploads it.
+          include-hidden-files: false
           if-no-files-found: error
           retention-days: 7
