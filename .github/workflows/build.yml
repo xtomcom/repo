@@ -16,6 +16,8 @@ jobs:
   build:
     name: ${{ matrix.package }} ${{ matrix.version }} (${{ matrix.arch }})
     runs-on: ${{ matrix.arch == 'arm64' && 'ubuntu-26.04-arm' || 'ubuntu-26.04' }}
+    # Normally a few minutes; a stuck distribution mirror shouldn't hold the run for 6 hours.
+    timeout-minutes: 30
     strategy:
       fail-fast: false
       matrix:
