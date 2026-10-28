@@ -18,7 +18,7 @@ A GitHub Actions job checks every upstream once a day and publishes new releases
 | `maddy` | [foxcpp/maddy](https://github.com/foxcpp/maddy) | amd64, arm64 | `maddy.service`, not enabled by default |
 | `rclone` | [rclone/rclone](https://github.com/rclone/rclone) | amd64, arm64 | |
 | `rdap` | [xtomcom/rdap](https://github.com/xtomcom/rdap) | amd64, arm64 | Replaces Debian/Ubuntu's `rdap` (OpenRDAP) |
-| `see-cli` | [sdotee/cli](https://github.com/sdotee/cli) | amd64, arm64 | Provides the `see` command; also installable as `see` |
+| `see` | [sdotee/cli](https://github.com/sdotee/cli) | amd64, arm64 | Also installable as `see-cli` |
 | `yadex` | [ustclug/yadex](https://github.com/ustclug/yadex) | amd64 | Upstream ships no arm64 build |
 | `yuki` | [ustclug/Yuki](https://github.com/ustclug/Yuki) | amd64 | `yukid` and `yukictl`; upstream ships no arm64 build |
 
@@ -51,7 +51,9 @@ Debian (via extrepo):
 ```bash
 sudo apt update && sudo apt install extrepo -y
 sudo extrepo enable xtom
-sudo apt update && sudo apt install rdap -y
+sudo apt update
+# Install any package listed above, for example:
+sudo apt install rdap see golang
 ```
 
 One-Line Style:
@@ -62,7 +64,8 @@ sudo apt install -y lsb-release ca-certificates apt-transport-https curl gnupg d
 curl -fsSL https://repo.xtom.com/xtom.key | sudo bash -c 'gpg --dearmor > /usr/share/keyrings/xtom.gpg'
 echo "deb [signed-by=/usr/share/keyrings/xtom.gpg] https://repo.xtom.com/deb stable main" | sudo tee /etc/apt/sources.list.d/xtom.list
 sudo apt update
-sudo apt install rdap
+# Install any package listed above, for example:
+sudo apt install rdap see golang
 ```
 
 DEB822:
@@ -79,7 +82,8 @@ Uris: https://repo.xtom.com/deb
 Signed-By: /usr/share/keyrings/xtom.gpg
 EOF'
 sudo apt update
-sudo apt install rdap -y
+# Install any package listed above, for example:
+sudo apt install rdap see golang
 ```
 
 There is a single `stable` suite for every Debian and Ubuntu release, because the packaged binaries don't depend on the distribution version.
@@ -89,7 +93,8 @@ There is a single `stable` suite for every Debian and Ubuntu release, because th
 ```bash
 # Add xTom repository
 sudo curl -o /etc/yum.repos.d/xtom.repo https://repo.xtom.com/rpm/xtom.repo
-sudo dnf install rdap
+# Install any package listed above, for example:
+sudo dnf install rdap see golang
 ```
 
 ## How it works

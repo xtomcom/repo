@@ -3,5 +3,5 @@
 set -e
 case "$1" in
   remove|purge|abort-install)
-    dpkg-divert --package see-cli --remove --rename --divert /usr/bin/see.mailcap /usr/bin/see ;;
+    dpkg-divert --package see --remove --rename --divert /usr/bin/see.mailcap /usr/bin/see ;;
 esac

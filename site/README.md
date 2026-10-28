@@ -23,7 +23,9 @@ Debian (via extrepo):
 ```bash
 sudo apt update && sudo apt install extrepo -y
 sudo extrepo enable xtom
-sudo apt update && sudo apt install rdap -y
+sudo apt update
+# Install any package listed above, for example:
+sudo apt install rdap see golang
 ```
 
 One-Line Style:
@@ -34,7 +36,8 @@ sudo apt install -y lsb-release ca-certificates apt-transport-https curl gnupg d
 curl -fsSL https://repo.xtom.com/xtom.key | sudo bash -c 'gpg --dearmor > /usr/share/keyrings/xtom.gpg'
 echo "deb [signed-by=/usr/share/keyrings/xtom.gpg] https://repo.xtom.com/deb stable main" | sudo tee /etc/apt/sources.list.d/xtom.list
 sudo apt update
-sudo apt install rdap
+# Install any package listed above, for example:
+sudo apt install rdap see golang
 ```
 
 DEB822:
@@ -51,7 +54,8 @@ Uris: https://repo.xtom.com/deb
 Signed-By: /usr/share/keyrings/xtom.gpg
 EOF'
 sudo apt update
-sudo apt install rdap -y
+# Install any package listed above, for example:
+sudo apt install rdap see golang
 ```
 
 ## RHEL / CentOS / Rocky / Alma / Fedora
@@ -59,7 +63,8 @@ sudo apt install rdap -y
 ```bash
 # Add xTom repository
 sudo curl -o /etc/yum.repos.d/xtom.repo https://repo.xtom.com/rpm/xtom.repo
-sudo dnf install rdap
+# Install any package listed above, for example:
+sudo dnf install rdap see golang
 ```
 
 ## Services

@@ -1,4 +1,4 @@
-name: see-cli
+name: see
 arch: ${ARCH}
 version: ${VERSION}
 release: ${RELEASE}
@@ -12,7 +12,7 @@ description: |-
   CLI client for the S.EE content sharing platform
   Manages short URLs, text pastes, file uploads, QR codes and bio pages on S.EE.
 provides:
-  - see
+  - see-cli
 contents:
   - src: ./see
     dst: /usr/bin/see
@@ -24,12 +24,12 @@ contents:
   - src: ./see.fish
     dst: /usr/share/fish/vendor_completions.d/see.fish
   - src: ./README.md
-    dst: /usr/share/doc/see-cli/README.md
+    dst: /usr/share/doc/see/README.md
   - src: ./LICENSE
-    dst: /usr/share/doc/see-cli/copyright
+    dst: /usr/share/doc/see/copyright
     packager: deb
   - src: ./LICENSE
-    dst: /usr/share/licenses/see-cli/LICENSE
+    dst: /usr/share/licenses/see/LICENSE
     type: license
     packager: rpm
 overrides:

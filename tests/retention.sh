@@ -27,12 +27,12 @@ got=$(stale rpm <<'EOF2'
 golang 1.27.3-1.xtom golang-1.27.3-1.xtom.x86_64.rpm
 golang 1.27.4-1.xtom golang-1.27.4-1.xtom.x86_64.rpm
 golang 1.26.10-1.xtom golang-1.26.10-1.xtom.x86_64.rpm
-see-cli 1.4.0-1.xtom see-cli-1.4.0-1.xtom.x86_64.rpm
-see-cli 1.3.9-1.xtom see-cli-1.3.9-1.xtom.x86_64.rpm
+see 1.4.0-1.xtom see-1.4.0-1.xtom.x86_64.rpm
+see 1.3.9-1.xtom see-1.3.9-1.xtom.x86_64.rpm
 EOF2
 )
 want='golang-1.27.3-1.xtom.x86_64.rpm
-see-cli-1.3.9-1.xtom.x86_64.rpm'
+see-1.3.9-1.xtom.x86_64.rpm'
 [[ $got == "$want" ]] || die "rpm: got:"$'\n'"$got"
 
 log "retention test passed"
