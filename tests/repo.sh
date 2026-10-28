@@ -8,6 +8,7 @@
 #     and from the server
 #   - publishing a file name that already exists is refused
 #   - xtom.key on the server is never touched, README.md lists the package
+#   - scripts/repo.sh sets up both client families and refuses unsupported ones
 
 source "$(dirname "$0")/../scripts/lib.sh"
 
@@ -74,10 +75,11 @@ for image in $DEB_IMAGES; do
   deb_clients+=("$id")
   run "$id" '
     export DEBIAN_FRONTEND=noninteractive
-    apt-get update -qq && apt-get install -y -qq gpg >/dev/null
-    gpg --dearmor < /repo/xtom.key > /usr/share/keyrings/xtom.gpg
-    echo "deb [signed-by=/usr/share/keyrings/xtom.gpg] file:///repo/deb stable main" > /etc/apt/sources.list.d/xtom.list
-    apt-get update -qq
+    apt-get update -qq && apt-get install -y -qq curl >/dev/null
+    # An entry in the old one-line style, which repo.sh must replace.
+    echo "deb file:///repo/deb stable main" > /etc/apt/sources.list.d/xtom.list
+    REPO_URL=file:///repo bash /src/scripts/repo.sh
+    test ! -e /etc/apt/sources.list.d/xtom.list
     apt-get install -y -qq "$NAME"
     dpkg-query -W -f="\${Version}\n" "$NAME" | grep -q -- ":\?$OLD-"
   '
@@ -87,7 +89,7 @@ for image in $RPM_IMAGES; do
   id=$(start "$image")
   rpm_clients+=("$id")
   run "$id" '
-    cp /repo/rpm/xtom.repo /etc/yum.repos.d/
+    REPO_URL=file:///repo bash /src/scripts/repo.sh
     # Old configs point at rpm/el$releasever/$basearch, which must keep working.
     sed "s|rpm/|rpm/el\$releasever/|; s|^\[xtom\]|[xtom-el]|" /repo/rpm/xtom.repo > /etc/yum.repos.d/xtom-el.repo
     dnf -y -q install "$NAME"
@@ -126,5 +128,18 @@ done
 
 log "republishing $new must be refused"
 if publish "$new" 2>/dev/null; then die "republishing $new was not refused"; fi
+
+log "repo.sh must refuse unsupported setups"
+refuse() {
+  local image=$1 want=$2 out
+  shift 2
+  if out=$(docker run --rm "$@" -v "$ROOT:/src:ro" "$image" bash /src/scripts/repo.sh 2>&1); then
+    die "repo.sh succeeded on $image $*"
+  fi
+  [[ $out == *"$want"* ]] || die "repo.sh on $image $*: unexpected output: $out"
+}
+refuse debian:13 "run this as root" --user 1000
+refuse debian:11 "Debian 12 or newer is required"
+refuse ubuntu:20.04 "Ubuntu 22.04 or newer is required"
 
 log "repository test passed"

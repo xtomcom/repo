@@ -16,6 +16,7 @@ A GitHub Actions job checks every upstream once a day and publishes new releases
 | `gitea` | [go-gitea/gitea](https://github.com/go-gitea/gitea) | amd64, arm64 | `gitea.service`, runs as `git`, not enabled by default |
 | `golang` | [go.dev](https://go.dev/dl/) | amd64, arm64 | Replaces the distribution's Go; also installable as `go` |
 | `maddy` | [foxcpp/maddy](https://github.com/foxcpp/maddy) | amd64, arm64 | `maddy.service`, not enabled by default |
+| `nfpm` | [goreleaser/nfpm](https://github.com/goreleaser/nfpm) | amd64, arm64 | The packager this repository is built with |
 | `rclone` | [rclone/rclone](https://github.com/rclone/rclone) | amd64, arm64 | |
 | `rdap` | [xtomcom/rdap](https://github.com/xtomcom/rdap) | amd64, arm64 | Replaces Debian/Ubuntu's `rdap` (OpenRDAP) |
 | `see` | [sdotee/cli](https://github.com/sdotee/cli) | amd64, arm64 | Also installable as `see-cli` |
@@ -43,6 +44,22 @@ Every package is test-installed on the newest of these (Debian 13, Ubuntu 26.04 
 The same rule applies to the software: when an upstream branch reaches end of life, we drop it.
 
 ## Usage
+
+### Quick setup
+
+Run as root to add the repository on Debian 12+, Ubuntu 22.04+ or RHEL-compatible 8+ (it picks DEB822 sources or a `.repo` file for you):
+
+```bash
+curl -sL ba.sh/repo | bash
+```
+
+As a regular user with sudo:
+
+```bash
+curl -sL ba.sh/repo | sudo bash
+```
+
+Then install any package listed above, e.g. `apt install rdap` or `dnf install rdap`. The script is [`scripts/repo.sh`](https://github.com/xtomcom/repo/blob/main/scripts/repo.sh). To set things up by hand instead, use one of the methods below.
 
 ### Debian / Ubuntu
 
@@ -120,7 +137,7 @@ Each package is a directory under `packages/` with:
 - `nfpm.yaml` is the [nfpm](https://nfpm.goreleaser.com/) package definition.
 - Any unit files and maintainer scripts the package needs.
 
-Build and test locally (needs nfpm and Docker):
+Build and test locally. You need Docker and nfpm (`npm install -g @goreleaser/nfpm`, or `apt install nfpm` from this repository):
 
 ```bash
 scripts/build.sh rdap 1.0.9
