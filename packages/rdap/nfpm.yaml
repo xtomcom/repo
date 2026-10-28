@@ -4,6 +4,8 @@ version: ${VERSION}
 # Debian and Ubuntu ship OpenRDAP as "rdap"; the epoch makes ours always win.
 epoch: 1
 release: ${RELEASE}
+depends:
+  - ca-certificates
 section: net
 priority: optional
 maintainer: xTom <packages@xtom.com>
