@@ -1,0 +1,5 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Bugs in the software itself
+    url: https://github.com/xtomcom/repo#packages
+    about: We ship upstream binaries unchanged. Please report bugs in the program itself to the upstream project linked in the package table.

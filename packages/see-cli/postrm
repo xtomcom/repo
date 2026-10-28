@@ -1,0 +1,7 @@
+#!/bin/sh
+# Give /usr/bin/see back to mailcap.
+set -e
+case "$1" in
+  remove|purge|abort-install)
+    dpkg-divert --package see-cli --remove --rename --divert /usr/bin/see.mailcap /usr/bin/see ;;
+esac

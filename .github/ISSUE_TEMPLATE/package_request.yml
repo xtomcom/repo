@@ -1,0 +1,41 @@
+name: Package request
+description: Ask us to add a piece of software to the repository
+labels: [package request]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        We only repackage **official prebuilt Linux binaries** published by upstream; we don't compile anything ourselves.
+        A good candidate publishes stable releases with static (or self-contained) binaries for linux amd64 and ideally arm64, preferably with checksums or signatures.
+  - type: input
+    id: name
+    attributes:
+      label: Software name
+      placeholder: caddy
+    validations:
+      required: true
+  - type: input
+    id: url
+    attributes:
+      label: Upstream release page
+      description: Where the official Linux binaries are published.
+      placeholder: https://github.com/caddyserver/caddy/releases
+    validations:
+      required: true
+  - type: checkboxes
+    id: arch
+    attributes:
+      label: Architectures upstream provides
+      options:
+        - label: amd64 / x86_64
+        - label: arm64 / aarch64
+  - type: textarea
+    id: why
+    attributes:
+      label: Why do you need it?
+      description: E.g. the distribution doesn't ship it, or its version is too old.
+  - type: textarea
+    id: notes
+    attributes:
+      label: Packaging notes
+      description: Anything we should know, such as a systemd service, a config file, or a system user it needs.

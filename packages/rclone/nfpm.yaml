@@ -1,0 +1,50 @@
+name: rclone
+arch: ${ARCH}
+version: ${VERSION}
+release: ${RELEASE}
+section: utils
+priority: optional
+maintainer: xTom <packages@xtom.com>
+vendor: xTom
+homepage: https://rclone.org
+license: MIT
+description: |-
+  rsync for cloud storage
+  Rclone is a command-line program to sync files and directories to and from
+  most cloud storage providers. It can also mount remotes as filesystems.
+suggests:
+  - ca-certificates
+  - fuse3
+contents:
+  - src: ./rclone
+    dst: /usr/bin/rclone
+    file_info: {mode: 0755}
+  # https://rclone.org/commands/rclone_mount/#rclone-as-unix-mount-helper
+  - src: /usr/bin/rclone
+    dst: /usr/sbin/mount.rclone
+    type: symlink
+  - src: /usr/bin/rclone
+    dst: /usr/bin/rclonefs
+    type: symlink
+  - src: ./rclone.1.gz
+    dst: /usr/share/man/man1/rclone.1.gz
+  - src: rclone.1.gz
+    dst: /usr/share/man/man1/mount.rclone.1.gz
+    type: symlink
+  - src: ./rclone.bash
+    dst: /usr/share/bash-completion/completions/rclone
+  - src: ./rclone.zsh
+    dst: /usr/share/zsh/site-functions/_rclone
+  - src: ./rclone.fish
+    dst: /usr/share/fish/vendor_completions.d/rclone.fish
+  - src: ./README.html
+    dst: /usr/share/doc/rclone/README.html
+  - src: ./README.txt
+    dst: /usr/share/doc/rclone/README.txt
+  - src: ./COPYING
+    dst: /usr/share/doc/rclone/copyright
+    packager: deb
+  - src: ./COPYING
+    dst: /usr/share/licenses/rclone/COPYING
+    type: license
+    packager: rpm

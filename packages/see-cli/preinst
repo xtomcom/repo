@@ -1,0 +1,7 @@
+#!/bin/sh
+# mailcap also ships /usr/bin/see (run-mailcap); move it aside while we own the name.
+set -e
+case "$1" in
+  install|upgrade)
+    dpkg-divert --package see-cli --add --rename --divert /usr/bin/see.mailcap /usr/bin/see ;;
+esac

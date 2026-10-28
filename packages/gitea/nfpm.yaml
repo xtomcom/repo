@@ -1,0 +1,38 @@
+name: gitea
+arch: ${ARCH}
+version: ${VERSION}
+release: ${RELEASE}
+section: vcs
+priority: optional
+maintainer: xTom <packages@xtom.com>
+vendor: xTom
+homepage: https://about.gitea.com
+license: MIT
+description: |-
+  Self-hosted Git service
+  Gitea is a lightweight forge: Git hosting, code review, issue tracking,
+  package registry and CI/CD (Gitea Actions) in a single binary.
+depends:
+  - git
+contents:
+  - src: ./gitea
+    dst: /usr/lib/gitea/gitea
+    file_info: {mode: 0755}
+  - src: ./gitea-wrapper
+    dst: /usr/bin/gitea
+    file_info: {mode: 0755}
+  - src: ./gitea.service
+    dst: /usr/lib/systemd/system/gitea.service
+  - src: ./sysusers.conf
+    dst: /usr/lib/sysusers.d/gitea.conf
+  - src: ./LICENSE
+    dst: /usr/share/doc/gitea/copyright
+    packager: deb
+  - src: ./LICENSE
+    dst: /usr/share/licenses/gitea/LICENSE
+    type: license
+    packager: rpm
+scripts:
+  postinstall: ./postinstall.sh
+  preremove: ./preremove.sh
+  postremove: ./postremove.sh

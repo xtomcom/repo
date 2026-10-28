@@ -1,0 +1,3 @@
+# User for yukid.service (User=mirror). To manage sync containers it needs
+# access to the Docker socket, e.g. `usermod -aG docker mirror`.
+u mirror - "Yuki mirror sync user"

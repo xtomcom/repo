@@ -1,0 +1,53 @@
+name: Bug report
+description: A package from repo.xtom.com fails to install, upgrade, start, or is out of date
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        This is for problems with our **packaging**: installation, upgrades, file locations, systemd units, signatures, or a release we haven't published.
+        If the program itself misbehaves the same way with the upstream binary, please report it to the upstream project.
+  - type: input
+    id: package
+    attributes:
+      label: Package and version
+      description: Output of `dpkg -l <package>` or `rpm -q <package>`.
+      placeholder: gitea 28.2.0-1
+    validations:
+      required: true
+  - type: dropdown
+    id: distro
+    attributes:
+      label: Distribution
+      options:
+        - Debian 13
+        - Debian 12
+        - Ubuntu 26.04
+        - Ubuntu 24.04
+        - Ubuntu 22.04
+        - RHEL / Rocky / AlmaLinux 10
+        - RHEL / Rocky / AlmaLinux 9
+        - RHEL / Rocky / AlmaLinux 8
+        - Other (please specify below)
+    validations:
+      required: true
+  - type: dropdown
+    id: arch
+    attributes:
+      label: Architecture
+      options: [amd64 / x86_64, arm64 / aarch64]
+    validations:
+      required: true
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened?
+      description: What you ran, what you expected, and what happened instead.
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs
+      description: Full output of the apt/dnf command, or `journalctl -u <service>` for service problems.
+      render: shell

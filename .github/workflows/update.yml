@@ -1,0 +1,109 @@
+name: Update
+
+on:
+  schedule:
+    - cron: '30 2 * * *'
+  workflow_dispatch:
+    inputs:
+      packages:
+        description: 'Space-separated NAME or NAME@VERSION (empty = check all for new releases)'
+        required: false
+  repository_dispatch:
+    types: [upstream-release]
+
+permissions:
+  contents: read
+
+# One writer to the repository server at a time; never cancel a publish midway.
+concurrency:
+  group: publish
+  cancel-in-progress: false
+
+jobs:
+  check:
+    runs-on: ubuntu-26.04
+    outputs:
+      matrix: ${{ steps.check.outputs.matrix }}
+    steps:
+      - uses: actions/checkout@v7
+
+      - id: check
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PACKAGES: ${{ inputs.packages || github.event.client_payload.package }}
+        run: |
+          # shellcheck disable=SC2086 # word splitting is intended
+          matrix=$(scripts/check.sh $PACKAGES)
+          echo "matrix=$matrix" >> "$GITHUB_OUTPUT"
+          jq -r '.[] | "- \(.package) \(.version) (\(.arch))"' <<< "$matrix" >> "$GITHUB_STEP_SUMMARY"
+
+  build:
+    needs: check
+    if: needs.check.outputs.matrix != '[]'
+    uses: ./.github/workflows/build.yml
+    with:
+      matrix: ${{ needs.check.outputs.matrix }}
+
+  publish:
+    needs: [check, build]
+    # Publish whatever passed; publish.sh drops releases missing an architecture.
+    if: ${{ !cancelled() && needs.check.result == 'success' && needs.check.outputs.matrix != '[]' }}
+    runs-on: ubuntu-26.04
+    permissions:
+      contents: write
+    env:
+      # These four may be repository secrets or variables.
+      REPO_DEST: ${{ secrets.SSH_USER }}@${{ secrets.REPO_HOST || vars.REPO_HOST }}:${{ secrets.REPO_PATH || vars.REPO_PATH }}
+      GPG_KEY_ID: ${{ secrets.GPG_KEY_ID || vars.GPG_KEY_ID }}
+      GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
+      CF_ZONE_ID: ${{ secrets.CF_ZONE_ID || vars.CF_ZONE_ID }}
+      CF_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/download-artifact@v8
+        with:
+          pattern: dist-*
+          path: dist
+          merge-multiple: true
+
+      - name: Install tools
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq apt-utils createrepo-c rpm rsync
+
+      - name: Import signing key
+        env:
+          GPG_PRIVATE_KEY: ${{ secrets.GPG_PRIVATE_KEY }}
+        run: gpg --batch --import <<< "$GPG_PRIVATE_KEY"
+
+      - name: Set up SSH
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+          SSH_KNOWN_HOSTS: ${{ secrets.SSH_KNOWN_HOSTS }}
+        run: |
+          install -d -m700 ~/.ssh
+          install -m600 /dev/null ~/.ssh/id
+          printf '%s\n' "$SSH_PRIVATE_KEY" > ~/.ssh/id
+          # The host key is only pinned when SSH_KNOWN_HOSTS is set, since the
+          # server moves around. Clients still verify every package via GPG.
+          if [ -n "$SSH_KNOWN_HOSTS" ]; then
+            printf '%s\n' "$SSH_KNOWN_HOSTS" > ~/.ssh/known_hosts
+            check='-o StrictHostKeyChecking=yes'
+          else
+            check='-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null'
+          fi
+          echo "RSYNC_RSH=ssh -i $HOME/.ssh/id $check -o BatchMode=yes" >> "$GITHUB_ENV"
+
+      - name: Publish
+        run: scripts/publish.sh
+
+      - name: Record published versions
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add versions.json
+          git diff --cached --quiet && exit 0
+          git commit -m "chore: publish $(cd dist/manifest && ls | cut -d@ -f1,2 | sort -u | tr '\n' ' ')"
+          for _ in 1 2 3; do git pull --rebase -q && git push && exit 0; sleep 5; done
+          exit 1

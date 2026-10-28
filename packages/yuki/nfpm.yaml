@@ -1,0 +1,56 @@
+name: yuki
+arch: ${ARCH}
+version: ${VERSION}
+release: ${RELEASE}
+section: admin
+priority: optional
+maintainer: xTom <packages@xtom.com>
+vendor: xTom
+homepage: https://github.com/ustclug/Yuki
+license: GPL-2.0
+description: |-
+  USTC mirror manager
+  Yuki (yukid daemon and yukictl client) syncs local mirror repositories
+  with their upstreams by running sync jobs in Docker containers.
+provides:
+  - yukid
+  - yukictl
+overrides:
+  deb:
+    depends:
+      - docker.io | docker-engine | docker-ce
+  rpm:
+    recommends:
+      - (docker-ce or moby-engine or podman-docker)
+contents:
+  - src: ./yukid
+    dst: /usr/bin/yukid
+    file_info: {mode: 0755}
+  - src: ./yukictl
+    dst: /usr/bin/yukictl
+    file_info: {mode: 0755}
+  - src: yukictl
+    dst: /usr/bin/yuki
+    type: symlink
+  - src: ./yukid.service
+    dst: /usr/lib/systemd/system/yukid.service
+  - src: ./yuki.sysusers
+    dst: /usr/lib/sysusers.d/yuki.conf
+  - src: ./daemon.example.toml
+    dst: /etc/yuki/daemon.example.toml
+    type: config|noreplace
+  - src: ./yukictl.bash
+    dst: /usr/share/bash-completion/completions/yukictl
+  - src: ./README.md
+    dst: /usr/share/doc/yuki/README.md
+  - src: ./LICENSE
+    dst: /usr/share/doc/yuki/copyright
+    packager: deb
+  - src: ./LICENSE
+    dst: /usr/share/licenses/yuki/LICENSE
+    type: license
+    packager: rpm
+scripts:
+  postinstall: ./postinstall.sh
+  preremove: ./preremove.sh
+  postremove: ./postremove.sh
