@@ -28,8 +28,12 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+
       - name: Install nfpm
-        run: sudo scripts/install-nfpm.sh
+        run: npm install -g @goreleaser/nfpm
 
       - name: Build
         run: scripts/build.sh "$PACKAGE" "$VERSION" "$ARCH"
