@@ -37,7 +37,7 @@ Packages use official release binaries from upstream distribution channels, incl
 | `vaultwarden` | [xtomcom/vaultwarden](https://github.com/xtomcom/vaultwarden) | amd64, arm64 | `vaultwarden.service`, config in `/etc/vaultwarden/vaultwarden.env`, not enabled by default. [Setup notes](packages/vaultwarden/README.md) |
 | `versitygw` | [versity/versitygw](https://github.com/versity/versitygw) | amd64, arm64 | `versitygw@.service` template, configs in `/etc/versitygw.d/`, not enabled by default |
 | `xcaddy` | [caddyserver/xcaddy](https://github.com/caddyserver/xcaddy) | amd64, arm64 | Requires Go (`golang`) to build Caddy |
-| `yadex` | [ustclug/yadex](https://github.com/ustclug/yadex) | amd64 | Upstream does not provide an arm64 build. [Setup notes](packages/yadex/README.md) |
+| `yadex` | [ustclug/yadex](https://github.com/ustclug/yadex) | amd64, arm64 | `yadex.service`, config in `/etc/yadex/config.toml`, not enabled by default. [Setup notes](packages/yadex/README.md) |
 | `yuki` | [ustclug/Yuki](https://github.com/ustclug/Yuki) | amd64 | `yukid` and `yukictl`; upstream does not provide an arm64 build |
 
 Package names, file locations and versions follow Debian and Fedora/EPEL packaging conventions for the same software. Where the distribution provides the same package, this repository provides a newer upstream release, installed through `apt upgrade` / `dnf upgrade`.

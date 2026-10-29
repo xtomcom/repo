@@ -1,8 +1,6 @@
 # shellcheck shell=bash
 UPSTREAM=ustclug/yadex
 BRANCHES=(0)
-RELEASE=2
-ARCHS=(amd64)
 TEST_CMD='
 yadex --help | grep -q -- --config
 test -f /usr/lib/systemd/system/yadex.service
@@ -24,10 +22,13 @@ rm -r /etc/systemd/system/yadex.service.d && systemctl daemon-reload
 '
 
 prepare() {
-  local version=$1 raw=https://raw.githubusercontent.com/$UPSTREAM/v$1 f
-  # Upstream publishes a bare static x86_64 binary with no checksums or signatures.
-  download "https://github.com/$UPSTREAM/releases/download/v$version/yadex" dl/yadex
-  install -Dm755 dl/yadex yadex
+  local version=$1 raw=https://raw.githubusercontent.com/$UPSTREAM/v$1 f file
+  # Upstream publishes bare static binaries with no checksum file.
+  case $2 in amd64) file=yadex ;; arm64) file=yadex-aarch64 ;; esac
+  download "https://github.com/$UPSTREAM/releases/download/v$version/$file" "dl/$file"
+  verify_sha256 "dl/$file" "$(gh_asset_sha256 "$UPSTREAM" "v$version" "$file")"
+  check_glibc "dl/$file"
+  install -Dm755 "dl/$file" yadex
   # Unit, config and docs as shipped in upstream's own deb (cargo-deb metadata).
   download "$raw/debian/service" yadex.service
   for f in etc/config.toml etc/index.html contrib/nginx.index.example.conf \

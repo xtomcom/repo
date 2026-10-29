@@ -6,7 +6,7 @@
 
 | Path | Description |
 |---|---|
-| `/usr/bin/yadex` | The upstream release binary |
+| `/usr/bin/yadex` | The upstream release binary (amd64 or arm64) |
 | `/usr/lib/systemd/system/yadex.service` | Upstream's unit, unchanged |
 | `/etc/yadex/config.toml` | Configuration, kept on upgrade |
 | `/etc/yadex/index.html` | Index page template, kept on upgrade |
