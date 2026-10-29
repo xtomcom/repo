@@ -28,6 +28,8 @@ A GitHub Actions job checks every upstream once a day and publishes new releases
 | `nodejs-26`, `nodejs-24`, `nodejs-22` | [nodejs.org](https://nodejs.org/) | amd64, arm64 | One LTS line each, with npm, installable side by side; also `nodejs26`, `nodejs24`, `nodejs22` |
 | `nfpm` | [goreleaser/nfpm](https://github.com/goreleaser/nfpm) | amd64, arm64 | The packager this repository is built with |
 | `oha` | [hatoo/oha](https://github.com/hatoo/oha) | amd64, arm64 | HTTP load generator |
+| `opencode-cli` | [anomalyco/opencode](https://github.com/anomalyco/opencode) | amd64, arm64 | opencode 2.x CLI; also installable as `opencode`. [Notes](packages/opencode-cli/README.md) |
+| `opencode-desktop` | [anomalyco/opencode](https://github.com/anomalyco/opencode) | amd64, arm64 | Desktop app (Electron), its self-updater disabled; replaces upstream's `opencode` desktop package. [Notes](packages/opencode-desktop/README.md) |
 | `rclone` | [rclone/rclone](https://github.com/rclone/rclone) | amd64, arm64 | |
 | `rdap` | [xtomcom/rdap](https://github.com/xtomcom/rdap) | amd64, arm64 | Replaces Debian/Ubuntu's `rdap` (OpenRDAP) |
 | `rustfs` | [rustfs/rustfs](https://github.com/rustfs/rustfs) | amd64, arm64 | `rustfs.service`, config in `/etc/default/rustfs`, not enabled by default |

@@ -1,0 +1,109 @@
+name: opencode-desktop
+arch: ${ARCH}
+version: ${VERSION}
+release: ${RELEASE}
+section: devel
+priority: optional
+maintainer: xTom <packages@xtom.com>
+vendor: xTom
+homepage: https://opencode.ai
+# OpenCode is MIT. It bundles Electron/Chromium, whose licences are in
+# /opt/OpenCode/LICENSE.electron.txt and LICENSES.chromium.html.
+license: MIT
+description: |-
+  The open source coding agent, desktop app
+  OpenCode's Electron desktop app, the build upstream ships as a .deb/.rpm
+  package named "opencode", in /opt/OpenCode. Start it from the applications
+  menu or with ai.opencode. The command line version is opencode-cli.
+overrides:
+  deb:
+    # Upstream's list, plus libasound2, which ai.opencode links against.
+    depends:
+      - libgtk-3-0
+      - libnotify4
+      - libnss3
+      - libxss1
+      - libxtst6
+      - xdg-utils
+      - libatspi2.0-0
+      - libuuid1
+      - libsecret-1-0
+      - libasound2
+    recommends: [libappindicator3-1]
+    # Upstream's own package of the same app, "opencode" without an epoch,
+    # also owns /opt/OpenCode. opencode-cli provides opencode with epoch 1
+    # and is not affected.
+    conflicts:
+      - opencode (<< 1:0~)
+    replaces:
+      - opencode (<< 1:0~)
+    scripts:
+      postinstall: ./postinstall.sh
+  rpm:
+    # Upstream's list, minus libXScrnSaver (not in EL10, and nothing links
+    # against it), plus the libraries ai.opencode links against that it
+    # leaves out.
+    depends:
+      - gtk3
+      - libnotify
+      - nss
+      - libXtst
+      - xdg-utils
+      - at-spi2-core
+      - libuuid
+      - libsecret
+      - alsa-lib
+      - mesa-libgbm
+      - cups-libs
+      - /usr/sbin/update-alternatives
+    # Obsoletes: dnf replaces upstream's "opencode" (no epoch) with this
+    # package. dnf matches obsoletes against package names only, so
+    # opencode-cli's "opencode" provide is not affected.
+    replaces:
+      - opencode < 1:0
+deb:
+  compression: xz
+rpm:
+  compression: zstd
+  scripts:
+    # posttrans, not post: when we replace upstream's package, its postun
+    # (which drops the ai.opencode alternative and resets chrome-sandbox)
+    # only runs after our post would have.
+    posttrans: ./postinstall.sh
+scripts:
+  preremove: ./preremove.sh
+  postremove: ./postremove.sh
+contents:
+  # Straight from upstream's .deb, minus resources/package-type (see
+  # package.sh). type tree on rpm, so rpm owns the directories too.
+  - src: ./OpenCode/
+    dst: /opt/OpenCode
+    packager: deb
+  - src: ./OpenCode/
+    dst: /opt/OpenCode
+    type: tree
+    packager: rpm
+  - src: ./share/applications/ai.opencode.desktop.desktop
+    dst: /usr/share/applications/ai.opencode.desktop.desktop
+  - src: ./share/applications/opencode-desktop.desktop
+    dst: /usr/share/applications/opencode-desktop.desktop
+  - src: ./share/metainfo/ai.opencode.desktop.metainfo.xml
+    dst: /usr/share/metainfo/ai.opencode.desktop.metainfo.xml
+  - src: ./share/icons/hicolor/32x32/apps/ai.opencode.png
+    dst: /usr/share/icons/hicolor/32x32/apps/ai.opencode.png
+  - src: ./share/icons/hicolor/64x64/apps/ai.opencode.png
+    dst: /usr/share/icons/hicolor/64x64/apps/ai.opencode.png
+  - src: ./share/icons/hicolor/128x128/apps/ai.opencode.png
+    dst: /usr/share/icons/hicolor/128x128/apps/ai.opencode.png
+  # The alternatives link, so rpm knows who owns it; dpkg leaves it to
+  # update-alternatives.
+  - dst: /usr/bin/ai.opencode
+    type: ghost
+    packager: rpm
+  - src: ./LICENSE
+    dst: /usr/share/doc/opencode-desktop/copyright
+    packager: deb
+  - src: ./LICENSE
+    dst: /usr/share/licenses/opencode-desktop/LICENSE
+    type: license
+    packager: rpm

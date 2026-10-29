@@ -1,0 +1,48 @@
+name: opencode-cli
+arch: ${ARCH}
+version: ${VERSION}
+release: ${RELEASE}
+section: devel
+priority: optional
+maintainer: xTom <packages@xtom.com>
+vendor: xTom
+homepage: https://opencode.ai
+license: MIT
+description: |-
+  The open source coding agent
+  OpenCode is an AI coding agent for the terminal. It works with many model
+  providers, edits code and runs commands in your project, and can also run
+  as a server for other clients.
+# "opencode" lets `apt/dnf install opencode` find us. Upstream's own desktop
+# app packages are named opencode, without an epoch; opencode-desktop conflicts
+# with opencode below 1:0, so the epoch here keeps it from hitting us.
+overrides:
+  deb:
+    provides:
+      - opencode (= 1:${VERSION}-${RELEASE})
+  rpm:
+    provides:
+      - opencode = 1:${VERSION}-${RELEASE}
+depends:
+  - ca-certificates
+recommends:
+  - git
+  # Used from PATH; without it opencode downloads its own copy to ~/.cache.
+  - ripgrep
+contents:
+  - src: ./opencode
+    dst: /usr/bin/opencode
+    file_info: {mode: 0755}
+  - src: ./opencode.bash
+    dst: /usr/share/bash-completion/completions/opencode
+  - src: ./opencode.zsh
+    dst: /usr/share/zsh/site-functions/_opencode
+  - src: ./opencode.fish
+    dst: /usr/share/fish/vendor_completions.d/opencode.fish
+  - src: ./LICENSE
+    dst: /usr/share/doc/opencode-cli/copyright
+    packager: deb
+  - src: ./LICENSE
+    dst: /usr/share/licenses/opencode-cli/LICENSE
+    type: license
+    packager: rpm
