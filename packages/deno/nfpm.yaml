@@ -1,0 +1,37 @@
+name: deno
+arch: ${ARCH}
+version: ${VERSION}
+release: ${RELEASE}
+section: javascript
+priority: optional
+maintainer: xTom <packages@xtom.com>
+vendor: xTom
+homepage: https://deno.com
+license: MIT
+description: |-
+  JavaScript, TypeScript and WebAssembly runtime
+  Deno runs JavaScript and TypeScript with secure defaults, and includes a
+  formatter, linter, test runner, package manager and compiler.
+overrides:
+  # Besides glibc, deno links libgcc_s.so.1.
+  deb:
+    depends: [ca-certificates, libgcc-s1]
+  rpm:
+    depends: [ca-certificates, libgcc]
+contents:
+  - src: ./deno
+    dst: /usr/bin/deno
+    file_info: {mode: 0755}
+  - src: ./deno.bash
+    dst: /usr/share/bash-completion/completions/deno
+  - src: ./deno.zsh
+    dst: /usr/share/zsh/site-functions/_deno
+  - src: ./deno.fish
+    dst: /usr/share/fish/vendor_completions.d/deno.fish
+  - src: ./LICENSE.md
+    dst: /usr/share/doc/deno/copyright
+    packager: deb
+  - src: ./LICENSE.md
+    dst: /usr/share/licenses/deno/LICENSE.md
+    type: license
+    packager: rpm
