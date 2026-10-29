@@ -1,11 +1,10 @@
 # xTom Package Repository
 
-APT and DNF repository at **[repo.xtom.com](https://repo.xtom.com/)** with up-to-date builds of open source server software, for `amd64` and `arm64`.
+The xTom APT and DNF repository at [repo.xtom.com](https://repo.xtom.com/) provides packages of open source server software for `amd64` and `arm64`.
 
-A GitHub Actions job checks every upstream once a day and publishes new releases automatically.
+A daily GitHub Actions job checks upstream releases and publishes package updates automatically.
 
-> [!IMPORTANT]
-> **We do not build anything from source.** Every binary in this repository is the official release binary, downloaded from the upstream project's own distribution channel (GitHub Releases, go.dev) and verified against the upstream checksums or signatures wherever upstream publishes them. We only wrap those binaries into `.deb` and `.rpm` packages: install paths, systemd units, system users and default config. The packaging is in [`packages/`](packages/), so you can check exactly what each package contains.
+Packages use official release binaries from upstream distribution channels, including GitHub Releases and go.dev. Binaries are verified against upstream checksums or signatures where available and are not compiled from source. The `.deb` and `.rpm` packages define installation paths, systemd units, system users and default configuration. Package definitions are available in [`packages/`](packages/).
 
 ## Packages
 
@@ -14,7 +13,7 @@ A GitHub Actions job checks every upstream once a day and publishes new releases
 | `anubis` | [TecharoHQ/anubis](https://github.com/TecharoHQ/anubis) | amd64, arm64 | `anubis@.service` template, not enabled by default |
 | `bun` | [oven-sh/bun](https://github.com/oven-sh/bun) | amd64, arm64 | `bun` and `bunx`. Update with apt/dnf, not `bun upgrade`. [Notes](packages/bun/README.md) |
 | `caddy` | [caddyserver/caddy](https://github.com/caddyserver/caddy) | amd64, arm64 | `caddy.service` and `caddy-api.service`, Debian layout, not enabled by default |
-| `codex` | [openai/codex](https://github.com/openai/codex) | amd64, arm64 | OpenAI Codex CLI. Ships `/etc/codex/config.toml` turning off the update check and the self-updating background daemon. [Notes](packages/codex/README.md) |
+| `codex` | [openai/codex](https://github.com/openai/codex) | amd64, arm64 | OpenAI Codex CLI. Includes `/etc/codex/config.toml` to disable the update check and the self-updating background daemon. [Notes](packages/codex/README.md) |
 | `deno` | [denoland/deno](https://github.com/denoland/deno) | amd64, arm64 | Update with apt/dnf, not `deno upgrade`. [Notes](packages/deno/README.md) |
 | `dnsproxy` | [AdguardTeam/dnsproxy](https://github.com/AdguardTeam/dnsproxy) | amd64, arm64 | `dnsproxy.service`, config in `/etc/dnsproxy/config.yaml`, not enabled by default. Replaces the unrelated Debian/Ubuntu `dnsproxy` |
 | `ferron` | [ferronweb/ferron](https://github.com/ferronweb/ferron) | amd64, arm64 | `ferron.service`, config in `/etc/ferron.kdl`, not enabled by default |
@@ -26,7 +25,7 @@ A GitHub Actions job checks every upstream once a day and publishes new releases
 | `maddy` | [foxcpp/maddy](https://github.com/foxcpp/maddy) | amd64, arm64 | `maddy.service`, not enabled by default |
 | `nodejs` | [nodejs.org](https://nodejs.org/) | amd64, arm64 | Metapackage for the newest LTS (`nodejs-26`); also `nodejs-lts`. See [Node.js](#nodejs) |
 | `nodejs-26`, `nodejs-24`, `nodejs-22` | [nodejs.org](https://nodejs.org/) | amd64, arm64 | One LTS line each, with npm, installable side by side; also `nodejs26`, `nodejs24`, `nodejs22` |
-| `nfpm` | [goreleaser/nfpm](https://github.com/goreleaser/nfpm) | amd64, arm64 | The packager this repository is built with |
+| `nfpm` | [goreleaser/nfpm](https://github.com/goreleaser/nfpm) | amd64, arm64 | Packaging tool used by this repository |
 | `oha` | [hatoo/oha](https://github.com/hatoo/oha) | amd64, arm64 | HTTP load generator |
 | `opencode-cli` | [anomalyco/opencode](https://github.com/anomalyco/opencode) | amd64, arm64 | opencode 2.x CLI; also installable as `opencode`. [Notes](packages/opencode-cli/README.md) |
 | `opencode-desktop` | [anomalyco/opencode](https://github.com/anomalyco/opencode) | amd64, arm64 | Desktop app (Electron), its self-updater disabled; replaces upstream's `opencode` desktop package. [Notes](packages/opencode-desktop/README.md) |
@@ -36,47 +35,47 @@ A GitHub Actions job checks every upstream once a day and publishes new releases
 | `see` | [sdotee/cli](https://github.com/sdotee/cli) | amd64, arm64 | Also installable as `see-cli` |
 | `vaultwarden` | [xtomcom/vaultwarden](https://github.com/xtomcom/vaultwarden) | amd64, arm64 | `vaultwarden.service`, config in `/etc/vaultwarden/vaultwarden.env`, not enabled by default. [Setup notes](packages/vaultwarden/README.md) |
 | `versitygw` | [versity/versitygw](https://github.com/versity/versitygw) | amd64, arm64 | `versitygw@.service` template, configs in `/etc/versitygw.d/`, not enabled by default |
-| `xcaddy` | [caddyserver/xcaddy](https://github.com/caddyserver/xcaddy) | amd64, arm64 | Needs Go (`golang`) to build Caddy |
-| `yadex` | [ustclug/yadex](https://github.com/ustclug/yadex) | amd64 | Upstream ships no arm64 build. [Setup notes](packages/yadex/README.md) |
-| `yuki` | [ustclug/Yuki](https://github.com/ustclug/Yuki) | amd64 | `yukid` and `yukictl`; upstream ships no arm64 build |
+| `xcaddy` | [caddyserver/xcaddy](https://github.com/caddyserver/xcaddy) | amd64, arm64 | Requires Go (`golang`) to build Caddy |
+| `yadex` | [ustclug/yadex](https://github.com/ustclug/yadex) | amd64 | Upstream does not provide an arm64 build. [Setup notes](packages/yadex/README.md) |
+| `yuki` | [ustclug/Yuki](https://github.com/ustclug/Yuki) | amd64 | `yukid` and `yukictl`; upstream does not provide an arm64 build |
 
-Package names, file locations and versions follow Debian's and Fedora/EPEL's own packaging of the same software. When your distribution also ships one of these packages, ours carries the newer upstream release, so a plain `apt upgrade` / `dnf upgrade` moves you to it.
+Package names, file locations and versions follow Debian and Fedora/EPEL packaging conventions for the same software. Where the distribution provides the same package, this repository provides a newer upstream release, installed through `apt upgrade` / `dnf upgrade`.
 
-For each package we choose which upstream release branches to carry (for example Go 1.27 and 1.26, Gitea 28) and keep only the newest release of each; older builds are removed when a new one is published. A new major version is added by hand once we have looked at it.
+Each package tracks selected upstream release branches, such as Go 1.27 and 1.26 or Gitea 28. Only the latest release of each branch is retained; publishing a new release removes older builds. New major versions are added manually after review.
 
-Services are never started on install. The steps to configure and start one are printed when its package is installed.
+Services are not started during installation. Each service package prints configuration and startup instructions when installed.
 
-Want something added? [Request a package](https://github.com/xtomcom/repo/issues/new?template=package_request.yml).
+To request additional software, [submit a package request](https://github.com/xtomcom/repo/issues/new?template=package_request.yml).
 
 ## Supported systems
 
-We only support distribution releases that are still maintained by their vendor (including Debian LTS). RHEL 8 and its rebuilds are not supported: their rpm cannot verify our Ed25519 package signatures. EOL releases may keep working, but we don't test them or fix problems specific to them.
+Support is limited to distribution releases maintained by their vendor, including Debian LTS. RHEL 8 and its rebuilds are unsupported because their RPM versions cannot verify the repository's Ed25519 package signatures. End-of-life releases may remain compatible, but are not tested and do not receive fixes for release-specific issues.
 
 - Debian 12 and 13
 - Ubuntu 22.04, 24.04 and 26.04 LTS
 - RHEL, Rocky Linux and AlmaLinux 9 and 10
 
-Every package is test-installed on the newest of these (Debian 13, Ubuntu 26.04 and Rocky Linux 10) on both architectures before it is published.
+Before publication, each package is tested by installing it on Debian 13, Ubuntu 26.04 and Rocky Linux 10 on both architectures.
 
-The same rule applies to the software: when an upstream branch reaches end of life, we drop it.
+Software branches are removed from the repository when they reach upstream end of life.
 
 ## Usage
 
 ### Quick setup
 
-Run as root to add the repository on Debian 12+, Ubuntu 22.04+ or RHEL-compatible 9+ (it picks DEB822 sources or a `.repo` file for you):
+Run the following command as root on Debian 12+, Ubuntu 22.04+ or RHEL-compatible 9+. The setup script adds DEB822 sources or a `.repo` file as appropriate:
 
 ```bash
 curl -sL ba.sh/repo | bash
 ```
 
-As a regular user with sudo:
+For a non-root user with sudo privileges:
 
 ```bash
 curl -sL ba.sh/repo | sudo bash
 ```
 
-Then install any package listed above, e.g. `apt install rdap` or `dnf install rdap`. The script is [`scripts/repo.sh`](https://github.com/xtomcom/repo/blob/main/scripts/repo.sh). To set things up by hand instead, use one of the methods below.
+Install a package using, for example, `apt install rdap` or `dnf install rdap`. The setup script is available at [`scripts/repo.sh`](https://github.com/xtomcom/repo/blob/main/scripts/repo.sh). Manual setup instructions follow.
 
 ### Debian / Ubuntu
 
@@ -90,7 +89,7 @@ sudo apt update
 sudo apt install rdap see golang
 ```
 
-One-Line Style:
+One-line sources format:
 
 ```bash
 sudo apt install -y lsb-release ca-certificates apt-transport-https curl gnupg dpkg
@@ -120,7 +119,7 @@ sudo apt update
 sudo apt install rdap see golang
 ```
 
-There is a single `stable` suite for every Debian and Ubuntu release, because the packaged binaries don't depend on the distribution version.
+There is a single `stable` suite for every Debian and Ubuntu release, because the packaged binaries do not depend on the distribution version.
 
 ### RHEL / CentOS / Rocky / Alma / Fedora
 
@@ -133,7 +132,7 @@ sudo dnf install rdap see golang
 
 ## Node.js
 
-Every Node.js LTS line is its own package, built from the official binaries on nodejs.org (signature-checked against the Node.js release keys) and laid out like Debian's and Fedora's packages. npm and npx come with each line, corepack with 22 and 24 (upstream dropped it in Node.js 25).
+Each Node.js LTS line has a separate package using official binaries from nodejs.org, verified against the Node.js release signing keys. The installation layout follows Debian and Fedora conventions. All lines include npm and npx. Node.js 22 and 24 also include corepack, which upstream removed in Node.js 25.
 
 | Package | Also known as | Installs |
 |---|---|---|
@@ -148,18 +147,18 @@ apt install nodejs-24     # stays on 24.x; upgrades never bring 26
 dnf install nodejs22      # aliases work with apt and dnf alike
 ```
 
-- **Side by side:** each line lives in `/usr/lib/nodejs-NN` and the lines can be installed together. `node`, `npm`, `npx`, `corepack` and `nodejs` point at the newest installed line through alternatives; `node-24`, `npm-24`, `npx-24` always run that exact line.
-- **Switching the default:** `update-alternatives --config node` (Debian/Ubuntu) or `alternatives --config node` (RHEL). npm and npx switch with it. `--auto` goes back to the newest.
-- **Global npm packages** go to `/usr/local/lib/node_modules`, their commands to `/usr/local/bin`, as with Debian's npm. Native addons are built for one Node.js version: rebuild them (`npm rebuild -g`) after switching lines.
-- **Replacing other Node.js packages:** ours replace the distribution's `nodejs`/`npm` and NodeSource's `nodejs`. Use `apt install nodejs` (or `apt full-upgrade`) rather than `apt upgrade` for the switch, and remove NodeSource's apt pin (`/etc/apt/preferences.d/nodejs`, `nsolid`) first, or apt keeps preferring NodeSource. On RHEL 9, an enabled `nodejs` module stream hides our packages: `dnf module reset nodejs`.
-- **End of life:** when a line reaches end of life it leaves the repository. Installed copies keep working without updates.
+- **Side by side:** each line is installed in `/usr/lib/nodejs-NN` and the lines can be installed together. `node`, `npm`, `npx`, `corepack` and `nodejs` point at the newest installed line through alternatives; `node-24`, `npm-24`, `npx-24` always run that exact line.
+- **Switching the default:** `update-alternatives --config node` (Debian/Ubuntu) or `alternatives --config node` (RHEL). npm and npx switch with it. `--auto` restores selection of the latest installed line.
+- **Global npm packages** are installed in `/usr/local/lib/node_modules`, with commands in `/usr/local/bin`, as with Debian's npm. Native addons are built for one Node.js version: rebuild them (`npm rebuild -g`) after switching lines.
+- **Replacing other Node.js packages:** these packages replace the distribution's `nodejs`/`npm` and NodeSource's `nodejs`. Use `apt install nodejs` (or `apt full-upgrade`) rather than `apt upgrade` for the switch, and remove NodeSource's apt pin (`/etc/apt/preferences.d/nodejs`, `nsolid`) first. Otherwise, apt continues to prefer NodeSource. On RHEL 9, an enabled `nodejs` module stream hides our packages: `dnf module reset nodejs`.
+- **End of life:** when a line reaches end of life it leaves the repository. Installed copies continue to work but receive no further updates.
 - **Names:** aliases are resolved at install time. `dpkg -l`, `rpm -qa` and removal use the real name, e.g. `apt remove nodejs-24`.
 
-Details, including what exactly is replaced on each distribution: [packages/nodejs/README.md](packages/nodejs/README.md).
+Package details and distribution-specific replacement behavior: [packages/nodejs/README.md](packages/nodejs/README.md).
 
 ## Go
 
-Every supported Go minor version is its own package, from the official go.dev tarballs (SHA-256 checked), laid out like Debian's `golang-1.NN` packages.
+Each supported Go minor version has a separate package using official go.dev tarballs verified against SHA-256 checksums. The installation layout follows Debian's `golang-1.NN` packages.
 
 | Package | Also known as | Installs |
 |---|---|---|
@@ -173,10 +172,10 @@ apt install golang-1.26   # stays on 1.26.x
 dnf install go1.26        # aliases work with apt and dnf alike
 ```
 
-- **Side by side:** GOROOT is `/usr/lib/go-1.NN`. `go`, `gofmt` and `/usr/lib/go` point at the newest installed version through alternatives; `go-1.26` and `gofmt-1.26` always run that version. Go finds its GOROOT from the binary, so there is nothing to set.
+- **Side by side:** GOROOT is `/usr/lib/go-1.NN`. `go`, `gofmt` and `/usr/lib/go` point at the newest installed version through alternatives; `go-1.26` and `gofmt-1.26` always run that version. Go determines GOROOT from the binary path; manual configuration is not required.
 - **Switching the default:** `update-alternatives --config go` (Debian/Ubuntu) or `alternatives --config go` (RHEL).
-- **Replacing other Go packages:** `golang` replaces the distribution's `golang-go`/`golang-src` (Debian, Ubuntu) and `golang`/`golang-bin` (RHEL), and the single `golang` package this repository published before; a normal upgrade moves you over. On RHEL, remove `go-toolset` first.
-- **End of life:** Go supports the two newest minor versions. When Go 1.28 comes out, `golang` moves to `golang-1.28` and `golang-1.26` leaves the repository; installed copies keep working without updates.
+- **Replacing other Go packages:** `golang` replaces the distribution's `golang-go`/`golang-src` (Debian, Ubuntu) and `golang`/`golang-bin` (RHEL), and the single `golang` package this repository published before; a standard upgrade performs the migration. On RHEL, remove `go-toolset` first.
+- **End of life:** Go supports the two newest minor versions. When Go 1.28 is released, `golang` moves to `golang-1.28` and `golang-1.26` leaves the repository; installed copies continue to work but receive no further updates.
 
 Details: [packages/golang/README.md](packages/golang/README.md).
 
@@ -189,22 +188,22 @@ scripts/test.sh     install, run and remove the packages in clean containers
 scripts/publish.sh  merge into the indexes, drop superseded builds, sign, upload, purge the CDN cache
 ```
 
-`.github/workflows/update.yml` runs these steps every day. Each package and architecture is built and tested on a native GitHub runner, and a release is only published once all of its architectures have passed. `versions.json` records what the repository holds, as `VERSION-RELEASE`, so bumping `RELEASE` in a package republishes it.
+`.github/workflows/update.yml` runs these steps every day. Each package and architecture is built and tested on a native GitHub runner, and a release is only published once all of its architectures have passed. `versions.json` records the published versions, as `VERSION-RELEASE`, so incrementing `RELEASE` republishes the package.
 
-You can also run the workflow by hand with a list of packages. `NAME` checks one package for new releases. `NAME@VERSION` builds that exact version. A file name is never published twice, because CDNs and clients cache pool files forever: to ship a packaging fix, bump `RELEASE` in the package's `package.sh`, and the next run publishes it.
+The workflow also accepts a package list for manual runs. `NAME` checks one package for new releases. `NAME@VERSION` builds that exact version. Published filenames are not reused because CDNs and clients cache pool files indefinitely. To publish a packaging fix, increment `RELEASE` in the package's `package.sh`; the next run publishes the revised package.
 
-The `README.md` served at repo.xtom.com is [`site/README.md`](site/README.md), with the package table filled in at publish time. The signing key `xtom.key` on the server is managed by hand; the scripts never write it.
+The `README.md` served at repo.xtom.com is [`site/README.md`](site/README.md), with the package table filled in at publish time. The signing key `xtom.key` on the server is managed manually; the scripts never write it.
 
 ### Adding a package
 
 Each package is a directory under `packages/` with:
 
-- `package.sh` sets `UPSTREAM`, `BRANCHES` (the release branches we carry, e.g. `(1.27 1.26)`), `ARCHS` and `TEST_CMD`, and defines `prepare VERSION ARCH`, which downloads and verifies the upstream files. It can also override `versions` when the upstream isn't a GitHub release, as for Go. Packages with a systemd service also set `SERVICE_TEST`: `scripts/test.sh` then installs them in Debian, Ubuntu and Rocky containers running systemd, checks that nothing starts on install, runs the test (which configures the service the way the install notice says, starts it and talks to it) and checks that removal stops it.
+- `package.sh` sets `UPSTREAM`, `BRANCHES` (the supported release branches, e.g. `(1.27 1.26)`), `ARCHS` and `TEST_CMD`, and defines `prepare VERSION ARCH`, which downloads and verifies the upstream files. It can also override `versions` when the upstream is not a GitHub release, as for Go. Packages with a systemd service also set `SERVICE_TEST`: `scripts/test.sh` then installs them in Debian, Ubuntu and Rocky containers running systemd, verifies that installation does not start the service, configures it according to the installation notice, starts it, tests communication with it and verifies that package removal stops it.
 - `nfpm.yaml` is the [nfpm](https://nfpm.goreleaser.com/) package definition.
 - When upstream ships both glibc and musl builds, use the glibc one and call `check_glibc` on it in `prepare`: it fails the build if the binary needs a newer glibc than the oldest supported system has (2.34, EL9). Use the musl build only when the glibc one needs more than that. Never ship both.
 - Any unit files and maintainer scripts the package needs.
 - Optionally a `README.md` with setup notes for users. It stays in this repository and is never packaged.
-- A metapackage sets `TEST_DEPS` to the packages it depends on, so `scripts/test.sh` builds and installs them with it. Files shared by several packages (the Node.js lines, the Go versions) live in `packages/_shared/NAME/` and are linked into each package directory.
+- A metapackage sets `TEST_DEPS` to the packages it depends on, so `scripts/test.sh` builds and installs them with it. Files shared by several packages (the Node.js lines, the Go versions) are stored in `packages/_shared/NAME/` and are linked into each package directory.
 
 Build and test locally. You need Docker and nfpm (`npm install -g @goreleaser/nfpm`, or `apt install nfpm` from this repository):
 
@@ -217,6 +216,10 @@ tests/golang.sh     # Go versions: the same, plus the upgrade from the old singl
 tests/retention.sh  # which builds are kept per branch
 ```
 
+## Support
+
+For questions or problems, contact [packages@xtom.com](mailto:packages@xtom.com) or [open an issue](https://github.com/xtomcom/repo/issues).
+
 ## License
 
-The packaging in this repository is [MIT](LICENSE) licensed. Each package keeps its upstream license, which ships inside the package.
+The packaging in this repository is licensed under [MIT](LICENSE). Each package retains and includes its upstream license.
