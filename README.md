@@ -25,6 +25,7 @@ A GitHub Actions job checks every upstream once a day and publishes new releases
 | `nodejs` | [nodejs.org](https://nodejs.org/) | amd64, arm64 | Metapackage for the newest LTS (`nodejs-26`); also `nodejs-lts`. See [Node.js](#nodejs) |
 | `nodejs-26`, `nodejs-24`, `nodejs-22` | [nodejs.org](https://nodejs.org/) | amd64, arm64 | One LTS line each, with npm, installable side by side; also `nodejs26`, `nodejs24`, `nodejs22` |
 | `nfpm` | [goreleaser/nfpm](https://github.com/goreleaser/nfpm) | amd64, arm64 | The packager this repository is built with |
+| `oha` | [hatoo/oha](https://github.com/hatoo/oha) | amd64, arm64 | HTTP load generator |
 | `rclone` | [rclone/rclone](https://github.com/rclone/rclone) | amd64, arm64 | |
 | `rdap` | [xtomcom/rdap](https://github.com/xtomcom/rdap) | amd64, arm64 | Replaces Debian/Ubuntu's `rdap` (OpenRDAP) |
 | `rustfs` | [rustfs/rustfs](https://github.com/rustfs/rustfs) | amd64, arm64 | `rustfs.service`, config in `/etc/default/rustfs`, not enabled by default |

@@ -50,12 +50,22 @@ MAX_GLIBC=2.34
 check_glibc() {
   local f need
   for f in "$@"; do
-    # Static binaries have no GLIBC_ symbols; grep finding nothing is fine.
-    need=$(objdump -T "$f" 2>/dev/null | { grep -o 'GLIBC_[0-9.]*' || true; } | cut -d_ -f2 | sort -uV | tail -n1)
+    # Static binaries have no dynamic symbols (objdump fails on non-PIE ones)
+    # and no GLIBC_ versions; both just mean there is nothing to check.
+    need=$({ objdump -T "$f" 2>/dev/null || true; } | { grep -o 'GLIBC_[0-9.]*' || true; } | cut -d_ -f2 | sort -uV | tail -n1)
     [[ -z $need ]] && continue
     [[ $(printf '%s\n%s\n' "$need" "$MAX_GLIBC" | sort -V | tail -n1) == "$MAX_GLIBC" ]] ||
       die "$(basename "$f") needs glibc $need, newer than the supported $MAX_GLIBC; use the musl build"
   done
+}
+
+# gh_asset_sha256 OWNER/REPO TAG FILE: the SHA-256 GitHub records for a release
+# asset, for upstreams that publish no checksum file of their own.
+gh_asset_sha256() {
+  local sum
+  sum=$(gh api "repos/$1/releases/tags/$2" | jq -r --arg f "$3" '.assets[] | select(.name == $f) | .digest // empty')
+  [[ $sum == sha256:* ]] || die "GitHub has no sha256 digest for $3 in $1 $2"
+  echo "${sum#sha256:}"
 }
 
 # gh_versions OWNER/REPO [COUNT]: recent stable release versions, newest first, "v" stripped.

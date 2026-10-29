@@ -1,0 +1,29 @@
+name: oha
+arch: ${ARCH}
+version: ${VERSION}
+release: ${RELEASE}
+depends:
+  - ca-certificates
+section: net
+priority: optional
+maintainer: xTom <packages@xtom.com>
+vendor: xTom
+homepage: https://github.com/hatoo/oha
+license: MIT
+description: |-
+  HTTP load generator with a live terminal UI
+  Sends a configurable number or rate of HTTP requests and reports latency
+  and throughput, in the spirit of rakyll/hey.
+contents:
+  - src: ./oha
+    dst: /usr/bin/oha
+    file_info: {mode: 0755}
+  - src: ./README.md
+    dst: /usr/share/doc/oha/README.md
+  - src: ./LICENSE
+    dst: /usr/share/doc/oha/copyright
+    packager: deb
+  - src: ./LICENSE
+    dst: /usr/share/licenses/oha/LICENSE
+    type: license
+    packager: rpm
