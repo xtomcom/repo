@@ -162,14 +162,35 @@ All lines share `/usr/local`. Keep these points in mind:
   After you switch the default to another major, rebuild with `npm rebuild -g`
   or reinstall the package. If several lines must use global packages at the
   same time, give each its own prefix, e.g. `npm_config_prefix=/opt/node24 npm-24 install -g …`.
-- **Don't run `npm install -g npm`.** It puts a second npm in `/usr/local/bin`.
-  That copy shadows ours for every line and isn't updated by apt or dnf. If you
-  did, remove it with `npm uninstall -g npm`. Each package update brings the
-  npm that ships with that Node.js release.
 - **corepack** (22 and 24) would by default write its `yarn`/`pnpm` shims into
   `/usr/lib/nodejs-NN/bin`. Install them into `/usr/local/bin` instead:
   `corepack enable --install-directory /usr/local/bin`. On Node.js 26, install
   corepack with `npm install -g corepack` if you need it.
+
+## Updating npm and global packages
+
+npm is released separately from Node.js. Each package ships the npm bundled
+with that Node.js release, so a newer npm may exist before Node.js picks it up.
+
+```sh
+npm update -g                 # update your global packages (in /usr/local)
+npm install -g npm@latest     # a newer npm, into /usr/local
+```
+
+`npm install -g npm@latest` installs the new npm in `/usr/local/lib/node_modules/npm`
+with the command in `/usr/local/bin/npm`. That comes before `/usr/bin` on `PATH`,
+so it is the `npm` you run from then on, for every Node.js line; it keeps using
+the `/usr/local` prefix. The npm in the package is not changed, and
+`npm-24`, `npm-26` etc. keep running the bundled one.
+
+Your `/usr/local` npm is yours to update: package upgrades no longer change
+the `npm` you run. Update it with `npm install -g npm@latest` again, or remove
+it to go back to the bundled npm of the default line:
+
+```sh
+npm uninstall -g npm
+hash -r
+```
 
 ## Native addons
 

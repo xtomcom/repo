@@ -321,4 +321,41 @@ for image in $DEB_IMAGES $RPM_IMAGES; do
   '
 done
 
+# Needs the npm registry: npm updates itself and global packages into
+# /usr/local, never touching the packaged files, and stays configured.
+for image in $DEB_IMAGES $RPM_IMAGES; do
+  log "$image: npm update -g and npm install -g npm@latest"
+  id=$(start "$image")
+  client "$id" '
+    add_repo
+    inst nodejs
+    bundled=$(npm -v)
+    test "$(npm prefix -g)" = /usr/local
+
+    npm install -g semver@7.5.0 >/dev/null
+    semver() { npm ls -g semver --depth=0 | grep -o "semver@[0-9.]*"; }
+    test "$(semver)" = semver@7.5.0
+    npm update -g >/dev/null
+    test "$(semver)" != semver@7.5.0
+    test -x /usr/local/bin/semver
+
+    npm install -g npm@latest >/dev/null
+    hash -r
+    test "$(command -v npm)" = /usr/local/bin/npm
+    latest=$(npm -v)
+    test "$(npm view npm version)" = "$latest"
+    # The new npm keeps installing into /usr/local ...
+    test "$(npm prefix -g)" = /usr/local
+    npm install -g cowsay >/dev/null
+    test -x /usr/local/bin/cowsay
+    test ! -e /usr/lib/nodejs-26/lib/node_modules/cowsay
+    # ... and the packaged npm is untouched and comes back when it is removed.
+    test "$(npm-26 -v)" = "$bundled"
+    npm uninstall -g npm >/dev/null
+    hash -r
+    test "$(command -v npm)" = /usr/bin/npm
+    test "$(npm -v)" = "$bundled"
+  '
+done
+
 log "Node.js test passed"
