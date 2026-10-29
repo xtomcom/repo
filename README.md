@@ -30,7 +30,7 @@ Packages use official release binaries from upstream distribution channels, incl
 | `opencode-cli` | [anomalyco/opencode](https://github.com/anomalyco/opencode) | amd64, arm64 | opencode 2.x CLI; also installable as `opencode`. [Notes](packages/opencode-cli/README.md) |
 | `opencode-desktop` | [anomalyco/opencode](https://github.com/anomalyco/opencode) | amd64, arm64 | Desktop app (Electron), its self-updater disabled; replaces upstream's `opencode` desktop package. [Notes](packages/opencode-desktop/README.md) |
 | `rclone` | [rclone/rclone](https://github.com/rclone/rclone) | amd64, arm64 | |
-| `rdap` | [xtomcom/rdap](https://github.com/xtomcom/rdap) | amd64, arm64 | Replaces Debian/Ubuntu's `rdap` (OpenRDAP) |
+| `rdap` | [xtomcom/rdap](https://github.com/xtomcom/rdap) | amd64, arm64 | Replaces Debian/Ubuntu's `rdap` (OpenRDAP). Optional API server: `rdap.service`, config in `/etc/default/rdap`, not enabled by default |
 | `rustfs` | [rustfs/rustfs](https://github.com/rustfs/rustfs) | amd64, arm64 | `rustfs.service`, config in `/etc/default/rustfs`, not enabled by default |
 | `see` | [sdotee/cli](https://github.com/sdotee/cli) | amd64, arm64 | Also installable as `see-cli` |
 | `vaultwarden` | [xtomcom/vaultwarden](https://github.com/xtomcom/vaultwarden) | amd64, arm64 | `vaultwarden.service`, config in `/etc/vaultwarden/vaultwarden.env`, not enabled by default. [Setup notes](packages/vaultwarden/README.md) |
@@ -208,8 +208,8 @@ Each package is a directory under `packages/` with:
 Build and test locally. You need Docker and nfpm (`npm install -g @goreleaser/nfpm`, or `apt install nfpm` from this repository):
 
 ```bash
-scripts/build.sh rdap 1.0.9
-scripts/test.sh rdap 1.0.9 amd64
+scripts/build.sh rdap 1.1.0
+scripts/test.sh rdap 1.1.0 amd64
 tests/repo.sh       # end-to-end: publish to a local directory, install and upgrade with apt and dnf
 tests/nodejs.sh     # Node.js lines: aliases, side by side, switching, removal, replacing distro/NodeSource
 tests/golang.sh     # Go versions: the same, plus the upgrade from the old single golang package
