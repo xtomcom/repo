@@ -1,0 +1,46 @@
+name: vaultwarden
+arch: ${ARCH}
+version: ${VERSION}
+# Upstream's own .deb/.rpm (xtomcom/vaultwarden) have no epoch; this one makes ours replace them.
+epoch: 1
+release: ${RELEASE}
+section: net
+priority: optional
+maintainer: xTom <packages@xtom.com>
+vendor: xTom
+homepage: https://github.com/dani-garcia/vaultwarden
+license: AGPL-3.0-only
+description: |-
+  Unofficial Bitwarden compatible server
+  Vaultwarden is a lightweight implementation of the Bitwarden server API,
+  bundled with the web vault. The vaultwarden.service unit reads its settings
+  from /etc/vaultwarden/vaultwarden.env and stores data in /var/lib/vaultwarden.
+depends:
+  - ca-certificates
+contents:
+  - src: ./vaultwarden
+    dst: /usr/bin/vaultwarden
+    file_info: {mode: 0755}
+  # type tree: the package owns the directories too and removes them.
+  - src: ./web-vault/
+    dst: /usr/share/vaultwarden/web-vault
+    type: tree
+  - src: ./vaultwarden.service
+    dst: /usr/lib/systemd/system/vaultwarden.service
+  - src: ./vaultwarden.env
+    dst: /etc/vaultwarden/vaultwarden.env
+    type: config|noreplace
+    file_info: {mode: 0640}
+  - src: ./sysusers.conf
+    dst: /usr/lib/sysusers.d/vaultwarden.conf
+  - src: ./LICENSE.txt
+    dst: /usr/share/doc/vaultwarden/copyright
+    packager: deb
+  - src: ./LICENSE.txt
+    dst: /usr/share/licenses/vaultwarden/LICENSE.txt
+    type: license
+    packager: rpm
+scripts:
+  postinstall: ./postinstall.sh
+  preremove: ./preremove.sh
+  postremove: ./postremove.sh

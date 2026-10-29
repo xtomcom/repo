@@ -243,7 +243,7 @@ run "$publisher" '
   test "$(jq -c ".[\"golang-$B1\"]" /t/versions.json)" = "[\"$V1-1\"]"
   test "$(jq -c ".[\"golang-$B2\"]" /t/versions.json)" = "[\"$V2-1\"]"
   # The old single package is gone from the indexes and the server.
-  ! find /t/www -name "golang[_-]$OLD_VERSION-1[._]*" | grep .
+  test -z "$(find /t/www -name "golang[_-]$OLD_VERSION-1[._]*")"
 '
 
 for image in $DEB_IMAGES $RPM_IMAGES; do

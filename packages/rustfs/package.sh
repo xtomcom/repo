@@ -16,7 +16,7 @@ for i in $(seq 60); do (exec 3<>/dev/tcp/127.0.0.1/9000) 2>/dev/null && break; s
 kill $pid'
 SERVICE_TEST='
 # The untouched /etc/default/rustfs sets no volume, so the unit must not come up.
-! systemctl start rustfs
+if systemctl start rustfs; then echo "rustfs started without a volume"; exit 1; fi
 journalctl -u rustfs | grep -q "<VOLUMES>"
 systemctl stop rustfs
 # The minimal settings the install notice asks for.

@@ -27,6 +27,7 @@ A GitHub Actions job checks every upstream once a day and publishes new releases
 | `rdap` | [xtomcom/rdap](https://github.com/xtomcom/rdap) | amd64, arm64 | Replaces Debian/Ubuntu's `rdap` (OpenRDAP) |
 | `rustfs` | [rustfs/rustfs](https://github.com/rustfs/rustfs) | amd64, arm64 | `rustfs.service`, config in `/etc/default/rustfs`, not enabled by default |
 | `see` | [sdotee/cli](https://github.com/sdotee/cli) | amd64, arm64 | Also installable as `see-cli` |
+| `vaultwarden` | [xtomcom/vaultwarden](https://github.com/xtomcom/vaultwarden) | amd64, arm64 | `vaultwarden.service`, config in `/etc/vaultwarden/vaultwarden.env`, not enabled by default. [Setup notes](packages/vaultwarden/README.md) |
 | `versitygw` | [versity/versitygw](https://github.com/versity/versitygw) | amd64, arm64 | `versitygw@.service` template, configs in `/etc/versitygw.d/`, not enabled by default |
 | `xcaddy` | [caddyserver/xcaddy](https://github.com/caddyserver/xcaddy) | amd64, arm64 | Needs Go (`golang`) to build Caddy |
 | `yadex` | [ustclug/yadex](https://github.com/ustclug/yadex) | amd64 | Upstream ships no arm64 build. [Setup notes](packages/yadex/README.md) |

@@ -31,7 +31,7 @@ test "$(stat -c %U /proc/$pid)" = caddy
 printf ":8080 {\n\trespond \"ok\"\n}\n" >/etc/caddy/Caddyfile
 systemctl reload caddy
 test "$(curl -fsS --retry 5 --retry-connrefused http://127.0.0.1:8080/)" = ok
-! curl -fsS http://127.0.0.1/
+if curl -fsS http://127.0.0.1/; then echo ":80 still served after the reload"; exit 1; fi
 test "$(systemctl show -P MainPID caddy)" = "$pid"
 # caddy-api.service resumes the config caddy autosaved in its state directory
 # and takes new config through the admin API.

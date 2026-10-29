@@ -50,7 +50,8 @@ MAX_GLIBC=2.34
 check_glibc() {
   local f need
   for f in "$@"; do
-    need=$(objdump -T "$f" 2>/dev/null | grep -o 'GLIBC_[0-9.]*' | cut -d_ -f2 | sort -uV | tail -n1)
+    # Static binaries have no GLIBC_ symbols; grep finding nothing is fine.
+    need=$(objdump -T "$f" 2>/dev/null | { grep -o 'GLIBC_[0-9.]*' || true; } | cut -d_ -f2 | sort -uV | tail -n1)
     [[ -z $need ]] && continue
     [[ $(printf '%s\n%s\n' "$need" "$MAX_GLIBC" | sort -V | tail -n1) == "$MAX_GLIBC" ]] ||
       die "$(basename "$f") needs glibc $need, newer than the supported $MAX_GLIBC; use the musl build"
