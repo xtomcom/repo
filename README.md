@@ -17,6 +17,7 @@ A GitHub Actions job checks every upstream once a day and publishes new releases
 | `deno` | [denoland/deno](https://github.com/denoland/deno) | amd64, arm64 | Update with apt/dnf, not `deno upgrade`. [Notes](packages/deno/README.md) |
 | `dnsproxy` | [AdguardTeam/dnsproxy](https://github.com/AdguardTeam/dnsproxy) | amd64, arm64 | `dnsproxy.service`, config in `/etc/dnsproxy/config.yaml`, not enabled by default. Replaces the unrelated Debian/Ubuntu `dnsproxy` |
 | `ferron` | [ferronweb/ferron](https://github.com/ferronweb/ferron) | amd64, arm64 | `ferron.service`, config in `/etc/ferron.kdl`, not enabled by default |
+| `fastfetch` | [fastfetch-cli/fastfetch](https://github.com/fastfetch-cli/fastfetch) | amd64, arm64 | Replaces the distribution's older `fastfetch`; includes `flashfetch` |
 | `gitea` | [go-gitea/gitea](https://github.com/go-gitea/gitea) | amd64, arm64 | `gitea.service`, runs as `git`, not enabled by default |
 | `golang` | [go.dev](https://go.dev/dl/) | amd64, arm64 | Metapackage for the newest Go (`golang-1.27`); also `go`. See [Go](#go) |
 | `golang-1.27`, `golang-1.26` | [go.dev](https://go.dev/dl/) | amd64, arm64 | One Go minor version each, installable side by side; also `go1.27`, `go-1.27`, `golang1.27` |
