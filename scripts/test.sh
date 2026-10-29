@@ -117,10 +117,17 @@ run_systemd() {
       [ "$(systemctl is-active "$u" || true)" = inactive ] || { echo "$u was started on install"; exit 1; }
     done
     bash -euxc "$SERVICE_TEST"
+    # Instances of template units (anubis@web) that SERVICE_TEST started.
+    templates=$( (dpkg -L "$NAME" 2>/dev/null || rpm -ql "$NAME") | grep -E "/systemd/system/[^/]+@\.service$" | xargs -rn1 basename)
+    instances=$(for t in $templates; do systemctl list-units --plain --no-legend --state=active "${t%.service}*.service" | cut -d" " -f1; done)
+    [ -z "$templates" ] || [ -n "$instances" ] || { echo "SERVICE_TEST started no instance of $templates"; exit 1; }
     # Removal must also undo `systemctl enable`, leaving no dangling links.
     for u in $units; do systemctl enable "$u"; done
     eval "$REMOVE"
-    for u in $units; do
+    for u in $instances; do
+      [ "$(systemctl is-active "$u" || true)" != active ] || { echo "$u still running after removal"; exit 1; }
+    done
+    for u in $units $templates; do
       [ "$(systemctl is-active "$u" || true)" != active ] || { echo "$u still running after removal"; exit 1; }
       ! systemctl cat "$u" >/dev/null 2>&1 || { echo "$u still installed after removal"; exit 1; }
     done

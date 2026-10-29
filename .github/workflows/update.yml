@@ -24,8 +24,13 @@ jobs:
     runs-on: ubuntu-26.04
     outputs:
       matrix: ${{ steps.check.outputs.matrix }}
+      sha: ${{ steps.check.outputs.sha }}
     steps:
+      # The branch tip, not the commit that triggered a run that sat in the
+      # queue: it has the versions.json of the publish before it.
       - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.ref }}
 
       - id: check
         env:
@@ -35,6 +40,7 @@ jobs:
           # shellcheck disable=SC2086 # word splitting is intended
           matrix=$(scripts/check.sh $PACKAGES)
           echo "matrix=$matrix" >> "$GITHUB_OUTPUT"
+          echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
           jq -r '.[] | "- \(.package) \(.version) (\(.arch))"' <<< "$matrix" >> "$GITHUB_STEP_SUMMARY"
 
   build:
@@ -43,6 +49,7 @@ jobs:
     uses: ./.github/workflows/build.yml
     with:
       matrix: ${{ needs.check.outputs.matrix }}
+      ref: ${{ needs.check.outputs.sha }}
 
   publish:
     needs: [check, build]
@@ -60,6 +67,8 @@ jobs:
       CF_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
     steps:
       - uses: actions/checkout@v7
+        with:
+          ref: ${{ needs.check.outputs.sha }}
 
       - uses: actions/download-artifact@v8
         with:
@@ -70,7 +79,7 @@ jobs:
       - name: Install tools
         run: |
           sudo apt-get update -qq
-          sudo apt-get install -y -qq apt-utils createrepo-c rpm rsync
+          sudo apt-get install -y -qq apt-utils createrepo-c rpm rsync zstd
 
       - name: Import signing key
         env:
@@ -102,8 +111,17 @@ jobs:
         run: |
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add versions.json
-          git diff --cached --quiet && exit 0
-          git commit -m "chore: publish $(cd dist/manifest && ls | cut -d@ -f1,2 | sort -u | tr '\n' ' ')"
-          for _ in 1 2 3; do git pull --rebase -q && git push && exit 0; sleep 5; done
+          msg="chore: publish $(cd dist/manifest && ls | cut -d@ -f1,2 | sort -u | tr '\n' ' ')"
+          # publish.sh wrote versions.json from the server's indexes, so it is
+          # the truth: put it on top of the current branch tip, never merge it.
+          cp versions.json "$RUNNER_TEMP/versions.json"
+          for _ in 1 2 3; do
+            git fetch -q origin "$GITHUB_REF_NAME"
+            git reset -q --hard FETCH_HEAD
+            cp "$RUNNER_TEMP/versions.json" versions.json
+            git diff --quiet versions.json && exit 0
+            git commit -q -m "$msg" versions.json
+            git push -q origin "HEAD:$GITHUB_REF_NAME" && exit 0
+            sleep 5
+          done
           exit 1

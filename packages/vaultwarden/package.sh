@@ -45,7 +45,8 @@ prepare() {
   tar -xzf "dl/$dir.tar.gz" -C dl
   install -Dm755 "dl/$dir/vaultwarden" vaultwarden
   # Static, so no check_glibc (which needs at least one GLIBC_ symbol).
-  ! objdump -p vaultwarden | grep -q NEEDED || die "vaultwarden is not statically linked"
+  # Not `objdump | grep -q`: grep exiting early fails objdump with SIGPIPE.
+  [[ $(objdump -p vaultwarden | grep -c NEEDED) -eq 0 ]] || die "vaultwarden is not statically linked"
   mv "dl/$dir/web-vault" "dl/$dir/vaultwarden.service" "dl/$dir/vaultwarden.env" "dl/$dir/LICENSE.txt" .
   [[ -f web-vault/index.html ]] || die "no web-vault/index.html"
   grep -q '^ExecStart=/usr/bin/vaultwarden$' vaultwarden.service || die "unexpected ExecStart in vaultwarden.service"

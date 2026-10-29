@@ -25,7 +25,8 @@ for arg in "${names[@]}"; do
     todo=("${arg#*@}")
   else
     mapfile -t upstream < <(versions | sort -rV)
-    [[ ${#upstream[@]} -gt 0 ]] || die "$name: no upstream versions found"
+    # An upstream (or the GitHub API) having a bad day must not hold back the rest.
+    [[ ${#upstream[@]} -gt 0 ]] || { warn "$name: no upstream versions found, skipped"; continue; }
     mapfile -t published < <(published_versions "$name")
     branch_of "${upstream[0]}" >/dev/null ||
       warn "$name ${upstream[0]} is newer than BRANCHES (${BRANCHES[*]}); add its branch to packages/$name/package.sh"

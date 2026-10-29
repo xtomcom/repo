@@ -7,7 +7,12 @@
 #   - apt and dnf trust the repo and install OLD, also via rpm/el$releasever
 #   - publishing NEW upgrades those clients and removes OLD from the indexes
 #     and from the server
-#   - publishing a file name that already exists is refused
+#   - publishing again keeps the server's copy of files already indexed,
+#     removes files no index lists (left by a failed publish) and by-hash
+#     files older than the previous Release, and the previous rpm metadata
+#     stays until the next publish
+#   - a metapackage whose dependency of ours is missing (golang without
+#     golang-1.NN) is left out
 #   - xtom.key on the server is never touched, README.md lists the package
 #   - scripts/repo.sh sets up both client families and refuses unsupported ones
 #   - the Cloudflare purge covers the indexes and every changed directory
@@ -46,7 +51,7 @@ publisher=$(start "$PUBLISH_IMAGE")
 run "$publisher" '
   export DEBIAN_FRONTEND=noninteractive
   apt-get update -qq
-  apt-get install -y -qq apt-utils createrepo-c rpm gnupg rsync jq xz-utils >/dev/null
+  apt-get install -y -qq apt-utils createrepo-c rpm gnupg rsync jq xz-utils zstd >/dev/null
   export GNUPGHOME=/t/gnupg
   mkdir -m700 "$GNUPGHOME"
   gpg --batch --passphrase "" --quick-gen-key "Test <test@example.com>" ed25519 sign never
@@ -75,7 +80,10 @@ publish() {
 
 log "publish $old"
 publish "$old"
-run "$publisher" 'test "$(readlink /t/www/rpm/el9)" = . && test ! -e /t/www/rpm/el8 && test ! -L /t/www/rpm/el8'
+run "$publisher" '
+  test "$(readlink /t/www/rpm/el9)" = . && test ! -e /t/www/rpm/el8 && test ! -L /t/www/rpm/el8
+  grep -o "href=\"repodata/[^\"]*\"" /t/www/rpm/x86_64/repodata/repomd.xml | cut -d\" -f2 > /t/old-repodata
+'
 
 deb_clients=() rpm_clients=()
 for image in $DEB_IMAGES; do
@@ -122,6 +130,8 @@ run "$publisher" '
   done
   test "$(jq -s "map(.files | length) | max" /t/purged.json)" -le 30
   grep -q "^| \[$NAME\](.*) | $NEW | " /t/www/README.md
+  # A cached old repomd.xml can still fetch what it names.
+  while read -r f; do test -f "/t/www/rpm/x86_64/$f"; done < /t/old-repodata
 '
 
 for id in "${deb_clients[@]}"; do
@@ -143,8 +153,29 @@ for id in "${rpm_clients[@]}"; do
   '
 done
 
-log "republishing $new must be refused"
-if publish "$new" 2>/dev/null; then die "republishing $new was not refused"; fi
+log "publish $new again, with leftovers on the server and golang without golang-1.NN"
+go=$(VERSIONS_FILE=/dev/null "$ROOT/scripts/check.sh" golang | jq -r '.[0].version')
+DIST=$tmp/dist-$new WORK=$tmp/work "$ROOT/scripts/build.sh" golang "$go"
+run "$publisher" '
+  find /t/www -name "*$NEW*" -type f | sort | xargs sha256sum > /t/new.sha256
+  # Uploaded by a publish that failed before its indexes went up.
+  mkdir -p /t/www/deb/pool/main/z/zz && touch /t/www/deb/pool/main/z/zz/zz_1-1_amd64.deb
+  touch /t/www/rpm/x86_64/Packages/zz-1-1.xtom.x86_64.rpm
+  # A by-hash file of a Release two publishes ago.
+  touch /t/www/deb/dists/stable/main/binary-amd64/by-hash/SHA256/0000
+'
+out=$(publish "$new" 2>&1) || { echo "$out"; die "publishing $new again failed"; }
+[[ $out == *"_$new-1_amd64.deb is already published"* ]] || die "no warning about the published files: $out"
+[[ $out == *"skip golang $go: a package of ours it depends on"* ]] || die "golang was not left out: $out"
+run "$publisher" '
+  sha256sum -c --quiet /t/new.sha256
+  test ! -e /t/www/deb/pool/main/z/zz/zz_1-1_amd64.deb
+  test ! -e /t/www/rpm/x86_64/Packages/zz-1-1.xtom.x86_64.rpm
+  test ! -e /t/www/deb/dists/stable/main/binary-amd64/by-hash/SHA256/0000
+  test -n "$(ls /t/www/deb/dists/stable/main/binary-amd64/by-hash/SHA256)"
+  test -z "$(find /t/www -name "golang*")"
+  test "$(jq -c "keys" /t/versions.json)" = "[\"$NAME\"]"
+'
 
 log "repo.sh must refuse unsupported setups"
 refuse() {

@@ -37,8 +37,15 @@ remote_delete() {
   rsync -r --delete "${filters[@]}" --exclude='*' "$WORK/empty/" "$REPO_DEST/$dir/"
 }
 
-# A release goes out only when every architecture built and passed its tests;
-# otherwise its files are dropped and the next run retries it.
+# drop_release NAME VERSION: leave this release out of the publish, all
+# architectures; the next run retries it.
+drop_release() {
+  load_package "$1"
+  rm -f "${DIST:?}/manifest/${1:?}@${2:?}@"* "${DIST:?}/${1:?}_${2:?}-${RELEASE:?}_"*.deb \
+    "${DIST:?}/${1:?}-${2:?}-${RELEASE:?}".xtom.*.rpm
+}
+
+# A release goes out only when every architecture built and passed its tests.
 shopt -s nullglob
 for m in "$DIST"/manifest/*@*@*; do
   m=$(basename "$m")
@@ -47,37 +54,125 @@ for m in "$DIST"/manifest/*@*@*; do
   load_package "$name"
   for a in "${ARCHS[@]}"; do
     [[ -e $DIST/manifest/$name@$version@$a ]] && continue
-    log "skip $name $version: not every architecture passed"
-    rm -f "$DIST/manifest/$m" "$DIST/${name}_${version}-${RELEASE}_"*.deb "$DIST/${name}-${version}-${RELEASE}".xtom.*.rpm
+    warn "skip $name $version: not every architecture passed"
+    drop_release "$name" "$version"
     break
   done
 done
-debs=("$DIST"/*.deb)
-rpms=("$DIST"/*.rpm)
 shopt -u nullglob
-[[ ${#debs[@]} -gt 0 || ${#rpms[@]} -gt 0 ]] || die "nothing to publish in $DIST"
+[[ -n $(find "$DIST" -maxdepth 1 \( -name '*.deb' -o -name '*.rpm' \)) ]] || die "nothing to publish in $DIST"
 
 repo=$WORK/repo
-rm -rf "$repo" "$WORK/rpm-build" "$WORK/empty"
+rm -rf "${repo:?}" "${WORK:?}/rpm-build" "${WORK:?}/empty"
 mkdir -p "$repo" "$WORK/empty"
 
 gpg_args=(--batch --yes --local-user "$GPG_KEY_ID")
-[[ -z ${GPG_PASSPHRASE:-} ]] || gpg_args+=(--pinentry-mode loopback --passphrase "$GPG_PASSPHRASE")
+if [[ -n ${GPG_PASSPHRASE:-} ]]; then
+  # A file, so spaces or % in the passphrase survive rpmsign's macro expansion.
+  install -m600 /dev/null "$WORK/passphrase"
+  printf '%s' "$GPG_PASSPHRASE" > "$WORK/passphrase"
+  gpg_args+=(--pinentry-mode loopback --passphrase-file "$WORK/passphrase")
+fi
 
 log "pull metadata from $REPO_DEST"
 rsync -a --checksum --prune-empty-dirs \
   --include='*/' --include='/deb/dists/***' --include='/rpm/*/repodata/***' --exclude='*' \
   "$REPO_DEST/" "$repo/"
+# Every package file on the server, indexed or not: a publish that failed
+# before its indexes went up leaves files that no index lists.
 rsync -r --list-only --include='/rpm/' --include='/rpm/*/' --include='/rpm/*/Packages/' \
-  --include='/rpm/*/Packages/*.rpm' --exclude='*' "$REPO_DEST/" |
-  awk '$NF ~ /\.rpm$/ { print $NF }' > "$WORK/remote-rpms"
+  --include='/rpm/*/Packages/*.rpm' --include='/deb/' --include='/deb/pool/***' --exclude='*' "$REPO_DEST/" |
+  awk '$NF ~ /\.(rpm|deb)$/ { print $NF }' > "$WORK/remote-files"
+sed -n 's|^rpm/||p' "$WORK/remote-files" > "$WORK/remote-rpms"
+
+# indexed_rpms ARCH: Packages/X.rpm for every file in that arch's metadata.
+indexed_rpms() {
+  local dir=$repo/rpm/$1 primary
+  [[ -f $dir/repodata/repomd.xml ]] || return 0
+  primary=$(grep -o 'href="repodata/[^"]*-primary\.xml[^"]*"' "$dir/repodata/repomd.xml" | cut -d'"' -f2)
+  case $primary in
+    *.zst) zstd -dcq "$dir/$primary" ;;
+    *.xz) xz -dc "$dir/$primary" ;;
+    *.gz) gzip -dc "$dir/$primary" ;;
+    *) die "unknown primary metadata '$primary' for $1" ;;
+  esac | { grep -o '<location href="Packages/[^"]*"' || true; } | cut -d'"' -f2
+}
+for arch in "${RPM_ARCHS[@]}"; do indexed_rpms "$arch" | sed "s|^|$arch/|"; done > "$WORK/indexed-rpms"
+find "$repo/deb/dists" -path '*/binary-*/Packages' -exec sed -n 's/^Filename: //p' {} + 2>/dev/null |
+  sort -u > "$WORK/indexed-debs" || true
 
 # Pool files are cached by the CDN and by clients forever, so a file name must
-# never get new content. Rebuilds need a new RELEASE.
-for f in "${debs[@]}" "${rpms[@]}"; do
-  ! grep -qsF "/$(basename "$f")" "$WORK/remote-rpms" "$repo"/deb/dists/stable/main/binary-*/Packages ||
-    die "$(basename "$f") is already published; bump RELEASE in its package.sh to rebuild it"
+# never get new content. A file that is already indexed (a rerun after a
+# publish whose last steps failed) keeps the server's copy; rebuilding a
+# release on purpose needs a new RELEASE.
+shopt -s nullglob
+for f in "$DIST"/*.deb "$DIST"/*.rpm; do
+  if grep -qF "/$(basename "$f")" "$WORK/indexed-debs" "$WORK/indexed-rpms"; then
+    warn "$(basename "$f") is already published, keeping the server's copy (bump RELEASE to rebuild it)"
+    rm "$f"
+  fi
 done
+
+# A package that depends on one of ours (golang on golang-1.27, nodejs on
+# nodejs-26) goes out only with that version in the repository or in this
+# publish, else it waits for the next run. Checked on the deb fields, applied
+# to both formats; repeated, since leaving one out can break another.
+# avail ARCH: "NAME VERSION" of everything the deb index and this publish offer.
+avail() {
+  local f
+  if [[ -f $repo/deb/dists/stable/main/binary-$1/Packages ]]; then
+    awk -v RS= '{
+        for (i = 1; i <= split($0, l, "\n"); i++) { split(l[i], kv, ": "); f[kv[1]] = kv[2] }
+        print f["Package"], f["Version"]
+      }' "$repo/deb/dists/stable/main/binary-$1/Packages"
+  fi
+  for f in "$DIST"/*_"$1".deb "$DIST"/*_all.deb; do
+    echo "$(dpkg-deb -f "$f" Package) $(dpkg-deb -f "$f" Version)"
+  done
+}
+# satisfied DEPENDS ARCH: whether every dependency on a package of ours is met.
+satisfied() {
+  local list clause alt dep op ver ok n v
+  list=$(avail "$2")
+  while read -r clause; do
+    [[ -n $clause ]] || continue
+    ok=false
+    while read -r alt; do
+      read -r dep op ver <<< "${alt//[()]/ }"
+      dep=${dep%%:*}
+      # Not one of ours: the distribution provides it.
+      [[ -f $ROOT/packages/$dep/package.sh ]] || { ok=true; break; }
+      while read -r n v; do
+        [[ $n == "$dep" ]] || continue
+        if [[ -z $op ]] || dpkg --compare-versions "$v" "$op" "$ver"; then ok=true; break 2; fi
+      done <<< "$list"
+    done < <(tr '|' '\n' <<< "$clause")
+    $ok || return 1
+  done < <(tr ',' '\n' <<< "$1")
+}
+while :; do
+  changed=false
+  for f in "$DIST"/*.deb; do
+    [[ -e $f ]] || continue
+    arch=$(dpkg-deb -f "$f" Architecture)
+    [[ $arch != all ]] || arch=${DEB_ARCHS[0]}
+    satisfied "$(dpkg-deb -f "$f" Depends)" "$arch" && continue
+    name=$(dpkg-deb -f "$f" Package)
+    version=$(dpkg-deb -f "$f" Version)
+    version=${version#*:}
+    warn "skip $name ${version%-*}: a package of ours it depends on is neither published nor in this run"
+    drop_release "$name" "${version%-*}"
+    changed=true
+  done
+  $changed || break
+done
+
+debs=("$DIST"/*.deb)
+rpms=("$DIST"/*.rpm)
+shopt -u nullglob
+# Nothing new still refreshes the indexes, so a rerun finishes the retention
+# and cleanup of a publish that failed midway.
+[[ ${#debs[@]} -gt 0 || ${#rpms[@]} -gt 0 ]] || log "no new packages, refreshing the indexes"
 
 # Packages in versions.json whose directory is gone from packages/ have been
 # retired (e.g. an upstream branch reached end of life): drop all their builds.
@@ -120,7 +215,11 @@ for arch in "${DEB_ARCHS[@]}"; do
   drop_debs+=("${drop[@]}")
 done
 
-rm -f "$dists/Release" "$dists/Release.gpg" "$dists/InRelease"
+# by-hash keeps the files of this Release and the previous one, which caches
+# may still serve; older ones are dropped instead of piling up.
+touch "$dists/Release"
+mv "$dists/Release" "$WORK/Release.old"
+rm -f "$dists/Release.gpg" "$dists/InRelease"
 apt-ftparchive \
   -o APT::FTPArchive::DoByHash=true \
   -o APT::FTPArchive::Release::Origin=xTom \
@@ -132,6 +231,10 @@ apt-ftparchive \
   -o APT::FTPArchive::Release::Description="xTom Package Repository" \
   release "$dists" > "$WORK/Release"
 mv "$WORK/Release" "$dists/Release"
+awk '/^ / { print $1 }' "$WORK/Release.old" "$dists/Release" | sort -u > "$WORK/hashes"
+find "$dists" -path '*/by-hash/*' -type f | while read -r f; do
+  grep -qxF "$(basename "$f")" "$WORK/hashes" || rm "$f"
+done
 gpg "${gpg_args[@]}" --armor --detach-sign --output "$dists/Release.gpg" "$dists/Release"
 gpg "${gpg_args[@]}" --clearsign --output "$dists/InRelease" "$dists/Release"
 
@@ -140,7 +243,7 @@ gpg "${gpg_args[@]}" --clearsign --output "$dists/InRelease" "$dists/Release"
 if [[ ${#rpms[@]} -gt 0 ]]; then
   sign=(rpmsign --addsign --define "_gpg_name $GPG_KEY_ID")
   [[ -z ${GPG_PASSPHRASE:-} ]] ||
-    sign+=(--define "_gpg_sign_cmd_extra_args --pinentry-mode loopback --passphrase $GPG_PASSPHRASE")
+    sign+=(--define "_gpg_sign_cmd_extra_args --pinentry-mode loopback --passphrase-file $WORK/passphrase")
   for f in "${rpms[@]}"; do
     arch=$(rpm -qp --qf '%{ARCH}' "$f" 2>/dev/null)
     install -Dm644 "$f" "$repo/rpm/$arch/Packages/$(basename "$f")"
@@ -152,21 +255,34 @@ declare -A drop_rpms=()
 for arch in "${RPM_ARCHS[@]}"; do
   dir=$repo/rpm/$arch
   build=$WORK/rpm-build/$arch
-  mkdir -p "$dir/Packages" "$build/Packages"
-  [[ -d $dir/repodata ]] && cp -r "$dir/repodata" "$build/"
+  mkdir -p "$dir/Packages" "$build/Packages" "$build/repodata"
+  # Start from the current metadata only: repomd.xml and the files it names.
+  old_md=()
+  if [[ -f $dir/repodata/repomd.xml ]]; then
+    mapfile -t old_md < <(grep -o 'href="repodata/[^"]*"' "$dir/repodata/repomd.xml" | cut -d'"' -f2 | xargs -rn1 basename)
+    for f in repomd.xml "${old_md[@]}"; do cp "$dir/repodata/$f" "$build/repodata/"; done
+  fi
+  sed -n "s|^$arch/Packages/||p" "$WORK/indexed-rpms" > "$WORK/indexed"
 
   # NAME-VERSION-RELEASE.ARCH.rpm; names may contain dashes, versions don't.
   mapfile -t drop < <({
-    sed -n "s|^rpm/$arch/Packages/||p" "$WORK/remote-rpms"
+    cat "$WORK/indexed"
     ls "$dir/Packages"
   } | awk '{ b = $0; sub(/\.[^.]+\.rpm$/, "", b); n = split(b, p, "-")
       name = p[1]; for (i = 2; i < n - 1; i++) name = name "-" p[i]
       print name, p[n - 1] "-" p[n], $0 }' | stale rpm)
+  # Server files that no index lists and this publish doesn't replace are
+  # left over from a failed publish.
+  while read -r f; do
+    grep -qxF "$f" "$WORK/indexed" || [[ -e $dir/Packages/$f ]] || drop+=("$f")
+  done < <(sed -n "s|^$arch/Packages/||p" "$WORK/remote-rpms")
   printf '%s\n' "${drop[@]}" > "$WORK/drop"
 
+  # Indexed packages we keep get an empty placeholder; --skip-stat reuses
+  # their metadata.
   while read -r f; do
     grep -qxF "$f" "$WORK/drop" || touch "$build/Packages/$f"
-  done < <(sed -n "s|^rpm/$arch/Packages/||p" "$WORK/remote-rpms")
+  done < "$WORK/indexed"
   for f in "$dir"/Packages/*.rpm; do
     [[ -e $f ]] || continue
     if grep -qxF "$(basename "$f")" "$WORK/drop"; then rm "$f"; else cp "$f" "$build/Packages/"; fi
@@ -177,7 +293,12 @@ for arch in "${RPM_ARCHS[@]}"; do
   else
     createrepo_c --quiet "$build"
   fi
-  rm -rf "$dir/repodata"
+  # Keep the previous metadata files next to the new ones: a cached old
+  # repomd.xml still names them until the purge reaches every edge.
+  for f in "${old_md[@]}"; do
+    [[ -e $build/repodata/$f ]] || cp "$dir/repodata/$f" "$build/repodata/"
+  done
+  rm -rf "${dir:?}/repodata"
   mv "$build/repodata" "$dir/repodata"
   gpg "${gpg_args[@]}" --armor --detach-sign --output "$dir/repodata/repomd.xml.asc" "$dir/repodata/repomd.xml"
   [[ ${#drop[@]} -eq 0 ]] || drop_rpms[$arch]="${drop[*]}"
@@ -247,19 +368,49 @@ filters=()
 for el in "${EL_LINKS[@]}" "${EL_DROPPED[@]}"; do filters+=("--include=/$el" "--include=/$el/***"); done
 rsync -a --force --delete "${filters[@]}" --exclude='*' "$repo/rpm/" "$REPO_DEST/rpm/"
 
-declare -A by_dir=()
-for f in "${drop_debs[@]}"; do by_dir[deb/$(dirname "$f")]+=" $(basename "$f")"; done
-for d in "${!by_dir[@]}"; do
-  # shellcheck disable=SC2086 # space-separated file names
-  remote_delete "$d" ${by_dir[$d]}
-done
-for arch in "${!drop_rpms[@]}"; do
-  # shellcheck disable=SC2086
-  remote_delete "rpm/$arch/Packages" ${drop_rpms[$arch]}
-done
+# Pool files no index lists any more: superseded ones and leftovers of a
+# failed publish.
+sed -n 's/^Filename: //p' "$dists"/main/binary-*/Packages | sort -u > "$WORK/final-debs"
+while read -r f; do
+  grep -qxF "$f" "$WORK/final-debs" || drop_debs+=("$f")
+done < <(sed -n 's|^deb/||p' "$WORK/remote-files")
 
 # --- cache -----------------------------------------------------------------
 
+# purge PATH...: purge these URLs, at most 30 per API call.
+purge() {
+  local i
+  for ((i = 1; i <= $#; i += 30)); do
+    log "purge Cloudflare cache ($((i - 1)))"
+    printf "$PUBLIC_URL/%s\n" "${@:i:30}" | jq -Rn '{files: [inputs]}' |
+      curl -fsS -X POST "https://api.cloudflare.com/client/v4/zones/$CF_ZONE_ID/purge_cache" \
+        -H "Authorization: Bearer $CF_API_TOKEN" -H 'Content-Type: application/json' --data @- |
+      jq -e .success >/dev/null || die "Cloudflare purge failed"
+  done
+}
+
+# Directory listings are cached too: purge every directory whose contents
+# change (new and removed packages, the indexes) and all its parents, and the
+# same directories under the el9/el10 links for rpm.
+declare -A dirs=()
+# add_dirs DIR/: DIR and its parents, as URL paths ("." stands for the root,
+# since bash can't use an empty key).
+add_dirs() {
+  local d=$1 el
+  while [[ -n $d ]]; do
+    dirs[$d]=1
+    if [[ $d == rpm/* && $d != rpm/el* ]]; then
+      for el in "${EL_LINKS[@]}"; do dirs[rpm/$el/${d#rpm/}]=1; done
+    fi
+    d=${d%/}
+    if [[ $d == */* ]]; then d=${d%/*}/; else d=; fi
+  done
+  dirs[.]=1
+}
+dir_urls() { local d; for d in "${!dirs[@]}"; do echo "${d#.}"; done; }
+
+# The cache is purged before anything is deleted, so no cached index still
+# lists a file that is gone.
 if [[ -n ${CF_ZONE_ID:-} && -n ${CF_API_TOKEN:-} ]]; then
   urls=(README.md rpm/xtom.repo deb/dists/stable/InRelease deb/dists/stable/Release deb/dists/stable/Release.gpg)
   for arch in "${DEB_ARCHS[@]}"; do
@@ -271,42 +422,37 @@ if [[ -n ${CF_ZONE_ID:-} && -n ${CF_API_TOKEN:-} ]]; then
     done
   done
 
-  # Directory listings are cached too. Purge every directory whose contents
-  # changed (new and removed packages, the indexes) and all its parents, and
-  # the same directories under the el9/el10 links for rpm.
-  declare -A dirs=()
-  # add_dirs DIR/: DIR and its parents, as URL paths ("." stands for the root,
-  # since bash can't use an empty key).
-  add_dirs() {
-    local d=$1 el
-    while [[ -n $d ]]; do
-      dirs[$d]=1
-      if [[ $d == rpm/* && $d != rpm/el* ]]; then
-        for el in "${EL_LINKS[@]}"; do dirs[rpm/$el/${d#rpm/}]=1; done
-      fi
-      d=${d%/}
-      if [[ $d == */* ]]; then d=${d%/*}/; else d=; fi
-    done
-    dirs[.]=1
-  }
   while read -r f; do add_dirs "$(dirname "$f")/"; done < <(
     cd "$repo" && find deb rpm/*/Packages -type f 2>/dev/null
     cd "$repo" && find deb/dists rpm/*/repodata -type d 2>/dev/null | sed 's|$|/x|'
   )
-  for f in "${drop_debs[@]}"; do add_dirs "deb/$(dirname "$f")/"; done
-  for arch in "${!drop_rpms[@]}"; do add_dirs "rpm/$arch/Packages/"; done
-  for d in "${!dirs[@]}"; do urls+=("${d#.}"); done
-
-  # The API takes at most 30 URLs per call.
-  for ((i = 0; i < ${#urls[@]}; i += 30)); do
-    log "purge Cloudflare cache ($i)"
-    printf "$PUBLIC_URL/%s\n" "${urls[@]:i:30}" | jq -Rn '{files: [inputs]}' |
-      curl -fsS -X POST "https://api.cloudflare.com/client/v4/zones/$CF_ZONE_ID/purge_cache" \
-        -H "Authorization: Bearer $CF_API_TOKEN" -H 'Content-Type: application/json' --data @- |
-      jq -e .success >/dev/null || die "Cloudflare purge failed"
-  done
+  mapfile -t -O "${#urls[@]}" urls < <(dir_urls)
+  purge "${urls[@]}"
 else
   log "CF_ZONE_ID/CF_API_TOKEN not set, skipping cache purge"
+fi
+
+# --- delete ----------------------------------------------------------------
+
+dirs=()
+declare -A by_dir=()
+while read -r f; do
+  if [[ -n $f ]]; then by_dir[deb/$(dirname "$f")]+=" $(basename "$f")"; fi
+done < <(printf '%s\n' "${drop_debs[@]}" | sort -u)
+for d in "${!by_dir[@]}"; do
+  # shellcheck disable=SC2086 # space-separated file names
+  remote_delete "$d" ${by_dir[$d]}
+  add_dirs "$d/"
+done
+for arch in "${!drop_rpms[@]}"; do
+  # shellcheck disable=SC2086
+  remote_delete "rpm/$arch/Packages" ${drop_rpms[$arch]}
+  add_dirs "rpm/$arch/Packages/"
+done
+# The listings of those directories changed once more.
+if [[ ${#by_dir[@]} -gt 0 || ${#drop_rpms[@]} -gt 0 ]] && [[ -n ${CF_ZONE_ID:-} && -n ${CF_API_TOKEN:-} ]]; then
+  mapfile -t urls < <(dir_urls)
+  purge "${urls[@]}"
 fi
 
 log "published"

@@ -8,6 +8,10 @@ on:
       matrix:
         type: string
         required: true
+      ref:
+        description: Commit to build; the triggering one if empty
+        type: string
+        default: ''
 
 permissions:
   contents: read
@@ -29,6 +33,8 @@ jobs:
       ARCH: ${{ matrix.arch }}
     steps:
       - uses: actions/checkout@v7
+        with:
+          ref: ${{ inputs.ref }}
 
       - uses: actions/setup-node@v7
         with:

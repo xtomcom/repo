@@ -5,6 +5,7 @@
 set -e
 case "$1" in
   remove | deconfigure | 0)
-    update-alternatives --remove node /usr/lib/nodejs-@MAJOR@/bin/node
+    # Not fatal: dnf aborts the removal if the entry is already gone.
+    update-alternatives --remove node /usr/lib/nodejs-@MAJOR@/bin/node || :
     ;;
 esac

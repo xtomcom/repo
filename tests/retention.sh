@@ -5,6 +5,8 @@
 
 source "$(dirname "$0")/../scripts/lib.sh"
 
+# ferron 1.x stands for a branch just replaced in BRANCHES whose successor
+# isn't published yet: it stays until a newer build is in the index.
 # nodejs-20 stands for a package removed from packages/ after its last release.
 got=$(RETIRED="nodejs-20" stale deb <<'EOF2'
 golang-1.27 2:1.27.3-1 a/golang-1.27_1.27.3-1_amd64.deb
@@ -18,6 +20,8 @@ rdap 1.0.9 a/rdap_1.0.9_amd64.deb
 rdap 1:1.0.9-1 a/rdap_1.0.9-1_amd64.deb
 gitea 28.2.0-2 a/gitea_28.2.0-2_amd64.deb
 gitea 28.2.0-1 a/gitea_28.2.0-1_amd64.deb
+gitea 27.5.0-1 a/gitea_27.5.0-1_amd64.deb
+ferron 1.3.7-1 a/ferron_1.3.7-1_amd64.deb
 unrelated 9.9 a/unrelated_9.9_amd64.deb
 nodejs-20 20.20.2-1 a/nodejs-20_20.20.2-1_amd64.deb
 EOF2
@@ -28,6 +32,7 @@ a/golang_1.27.3-1_amd64.deb
 a/golang_1.26.10-1_amd64.deb
 a/rdap_1.0.9_amd64.deb
 a/gitea_28.2.0-1_amd64.deb
+a/gitea_27.5.0-1_amd64.deb
 a/nodejs-20_20.20.2-1_amd64.deb'
 [[ $got == "$want" ]] || die "deb: got:"$'\n'"$got"
 

@@ -120,9 +120,12 @@ version_gt() {
 # one of a branch in its BRANCHES, and every build of a package named in
 # RETIRED (published once, since removed from packages/). Anything else in the
 # index is left alone.
+# A build outside BRANCHES (the branch was just replaced, e.g. gitea 28 -> 29)
+# is only dropped once the index has a newer kept build of the same package,
+# so a new branch that failed to build never empties the package.
 stale() {
   local fmt=$1 name version file upstream branch key
-  local -A best=() best_file=()
+  local -A best=() best_file=() newest=()
   local -a entries=()
   while read -r name version file; do
     entries+=("$name $version $file")
@@ -137,13 +140,25 @@ stale() {
     fi
   done
   local -A keep=()
-  for file in "${best_file[@]}"; do keep[$file]=1; done
+  for key in "${!best_file[@]}"; do
+    keep[${best_file[$key]}]=1
+    name=${key%@*}
+    if [[ -z ${newest[$name]:-} ]] || version_gt "$fmt" "${best[$key]}" "${newest[$name]}"; then
+      newest[$name]=${best[$key]}
+    fi
+  done
   for entry in "${entries[@]}"; do
     read -r name version file <<< "$entry"
     if [[ " ${RETIRED:-} " == *" $name "* ]]; then
       echo "$file"
     elif [[ -f $ROOT/packages/$name/package.sh && -z ${keep[$file]:-} ]]; then
-      echo "$file"
+      upstream=${version#*:}
+      upstream=${upstream%-*}
+      # In a branch but superseded, or outside BRANCHES with something newer kept.
+      if (load_package "$name" && branch_of "$upstream" >/dev/null) ||
+        { [[ -n ${newest[$name]:-} ]] && version_gt "$fmt" "${newest[$name]}" "$version"; }; then
+        echo "$file"
+      fi
     fi
   done
   return 0
