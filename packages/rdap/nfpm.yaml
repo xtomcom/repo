@@ -15,10 +15,18 @@ license: MIT
 description: |-
   Modern RDAP client
   Queries domain, IP and ASN registration data over RDAP (RFC 7480-7484).
+  Includes an optional local HTTP API server (rdap.service, not enabled).
 contents:
   - src: ./rdap
     dst: /usr/bin/rdap
     file_info: {mode: 0755}
+  - src: ./rdap.service
+    dst: /usr/lib/systemd/system/rdap.service
+  # May hold the API token or proxy credentials.
+  - src: ./rdap.env
+    dst: /etc/default/rdap
+    type: config|noreplace
+    file_info: {mode: 0600}
   - src: ./LICENSE
     dst: /usr/share/doc/rdap/copyright
     packager: deb
@@ -26,3 +34,7 @@ contents:
     dst: /usr/share/licenses/rdap/LICENSE
     type: license
     packager: rpm
+scripts:
+  postinstall: ./postinstall.sh
+  preremove: ./preremove.sh
+  postremove: ./postremove.sh

@@ -1,3 +1,4 @@
+# shellcheck shell=sh
 # Installed by the opencode-cli package. opencode is updated by apt/dnf, so
 # skip its own update check unless you have set OPENCODE_DISABLE_AUTOUPDATE
 # yourself. To get the check back, set OPENCODE_DISABLE_AUTOUPDATE=0 in your
