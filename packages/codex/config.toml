@@ -1,0 +1,15 @@
+# System-wide defaults for Codex, installed by the xTom codex package. Your own
+# ~/.codex/config.toml overrides anything set here.
+
+# This copy of Codex is updated by apt/dnf, so don't check GitHub for new
+# releases on startup and show an "Update available!" notice.
+check_for_update_on_startup = false
+
+[features]
+# Upstream's default starts a shared background app-server for the
+# interactive TUI. That copies this whole installation into
+# ~/.codex/packages/app-server-daemon and runs an updater that replaces it
+# with every new upstream release, so the TUI would end up talking to a
+# server apt/dnf don't manage. Without it the TUI runs its own app-server, as
+# `codex --no-daemon` does. Set it to true in ~/.codex/config.toml to opt in.
+daemon_auto_start = false

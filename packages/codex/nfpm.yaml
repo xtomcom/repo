@@ -1,0 +1,55 @@
+name: codex
+arch: ${ARCH}
+version: ${VERSION}
+release: ${RELEASE}
+section: devel
+priority: optional
+maintainer: xTom <packages@xtom.com>
+vendor: xTom
+homepage: https://github.com/openai/codex
+# Codex is Apache-2.0. It bundles ripgrep (MIT or Unlicense), bubblewrap
+# (LGPL-2.0-or-later) and, for voice, GLib/GStreamer (LGPL-2.1-or-later) with
+# a few small libraries; see /usr/lib/codex/codex-resources/voice/NOTICE.md.
+license: Apache-2.0 AND (MIT OR Unlicense) AND LGPL-2.0-or-later AND LGPL-2.1-or-later
+description: |-
+  OpenAI's coding agent for the terminal
+  Codex CLI reads, edits and runs code in your working directory, in a
+  sandbox, using OpenAI models. Sign in with ChatGPT or use an API key.
+depends:
+  - ca-certificates
+recommends:
+  # Codex prefers the system bwrap for its Linux sandbox and warns when there
+  # is none; it falls back to the bundled one.
+  - bubblewrap
+  - git
+deb:
+  compression: xz
+rpm:
+  compression: zstd
+contents:
+  # The official package layout, unchanged: codex finds rg, bwrap and its
+  # other helpers next to codex-package.json, through the /usr/bin symlink.
+  - src: ./codex/
+    dst: /usr/lib/codex
+    type: tree
+  - src: ../lib/codex/bin/codex
+    dst: /usr/bin/codex
+    type: symlink
+  - src: ./config.toml
+    dst: /etc/codex/config.toml
+    type: config|noreplace
+  - src: ./codex.bash
+    dst: /usr/share/bash-completion/completions/codex
+  - src: ./codex.zsh
+    dst: /usr/share/zsh/site-functions/_codex
+  - src: ./codex.fish
+    dst: /usr/share/fish/vendor_completions.d/codex.fish
+  - src: ./NOTICE
+    dst: /usr/share/doc/codex/NOTICE
+  - src: ./LICENSE
+    dst: /usr/share/doc/codex/copyright
+    packager: deb
+  - src: ./LICENSE
+    dst: /usr/share/licenses/codex/LICENSE
+    type: license
+    packager: rpm

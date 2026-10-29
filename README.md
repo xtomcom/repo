@@ -14,6 +14,7 @@ A GitHub Actions job checks every upstream once a day and publishes new releases
 | `anubis` | [TecharoHQ/anubis](https://github.com/TecharoHQ/anubis) | amd64, arm64 | `anubis@.service` template, not enabled by default |
 | `bun` | [oven-sh/bun](https://github.com/oven-sh/bun) | amd64, arm64 | `bun` and `bunx`. Update with apt/dnf, not `bun upgrade`. [Notes](packages/bun/README.md) |
 | `caddy` | [caddyserver/caddy](https://github.com/caddyserver/caddy) | amd64, arm64 | `caddy.service` and `caddy-api.service`, Debian layout, not enabled by default |
+| `codex` | [openai/codex](https://github.com/openai/codex) | amd64, arm64 | OpenAI Codex CLI. Ships `/etc/codex/config.toml` turning off the update check and the self-updating background daemon. [Notes](packages/codex/README.md) |
 | `deno` | [denoland/deno](https://github.com/denoland/deno) | amd64, arm64 | Update with apt/dnf, not `deno upgrade`. [Notes](packages/deno/README.md) |
 | `dnsproxy` | [AdguardTeam/dnsproxy](https://github.com/AdguardTeam/dnsproxy) | amd64, arm64 | `dnsproxy.service`, config in `/etc/dnsproxy/config.yaml`, not enabled by default. Replaces the unrelated Debian/Ubuntu `dnsproxy` |
 | `ferron` | [ferronweb/ferron](https://github.com/ferronweb/ferron) | amd64, arm64 | `ferron.service`, config in `/etc/ferron.kdl`, not enabled by default |
