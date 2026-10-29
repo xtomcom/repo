@@ -22,13 +22,17 @@ On x86-64, upstream also publishes `opencode-linux-x64-baseline.tar.gz` for CPUs
 Update with `apt upgrade` / `dnf upgrade`.
 
 - **`opencode upgrade`** only knows its own installer (`~/.opencode/bin`), npm, pnpm, bun, yarn, Vite+, Homebrew and WinGet. For `/usr/bin/opencode` it finds none of them and stops with *"Could not detect the installation method"* without changing anything, as root or as a normal user. Don't pass `--method`: `--method curl` installs a second copy into `~/.opencode/bin` and adds it to your shell's `PATH`, where it shadows this package.
-- **The update check.** The interactive TUI asks opencode.ai for the latest release every 10 minutes and, by default, shows *"Update available"*. Installing from that dialog fails the same way (*"Update with your package manager"*). Upstream reads this setting only from the user's own config or the environment, not from `/etc/opencode`, so the package can't turn it off for everyone. To turn it off, put this in `~/.config/opencode/opencode.json`:
+- **The update check.** Upstream's interactive TUI asks opencode.ai for the latest release every 10 minutes and shows *"Update available"*. Installing from that dialog fails the same way (*"Update with your package manager"*), and the advice it leads to (`--method curl`) would put a second copy in front of this one. opencode reads this setting only from the user's own config or the environment, not from `/etc`, so the package installs `/etc/profile.d/opencode.sh`, which sets
 
-  ```json
-  { "autoupdate": false }
+  ```sh
+  OPENCODE_DISABLE_AUTOUPDATE=1   # only if you haven't set it yourself
   ```
 
-  or set `OPENCODE_DISABLE_AUTOUPDATE=1` in your environment.
+  With `1` or `true`, opencode skips the update check entirely.
+
+  - It applies to login shells that read `/etc/profile`: bash and sh on every supported system, and zsh on RHEL/Rocky/Alma (Debian's and Ubuntu's zsh don't read it by default). fish never reads it, nor do services, cron jobs or `ssh host opencode …` without a login shell. Set the variable yourself there if you want the same behaviour, or use `{ "autoupdate": false }` in `~/.config/opencode/opencode.json`.
+  - To get the update check back, put `export OPENCODE_DISABLE_AUTOUPDATE=0` in `~/.profile` / `~/.bashrc`, or delete `/etc/profile.d/opencode.sh` for everyone. It is a configuration file, so package upgrades leave your edit or deletion alone.
+  - Open a new login shell after installing for it to take effect.
 
 The TUI starts a per-user background server. After a package update, the next `opencode` notices the version change and restarts it.
 

@@ -13,7 +13,10 @@ grep -q "^#compdef opencode" /usr/share/zsh/site-functions/_opencode
 # changes nothing.
 if out=$(opencode upgrade </dev/null 2>&1); then echo "opencode upgrade succeeded: $out"; exit 1; fi
 echo "$out" | grep -q "Could not detect the installation method"
-test ! -e /root/.opencode'
+test ! -e /root/.opencode
+# Login shells get the update check turned off, unless set otherwise.
+test "$(bash -lc "echo \$OPENCODE_DISABLE_AUTOUPDATE")" = 1
+test "$(OPENCODE_DISABLE_AUTOUPDATE=0 bash -lc "echo \$OPENCODE_DISABLE_AUTOUPDATE")" = 0'
 
 # The tarballs use x64 / arm64.
 opencode_arch() { case $1 in amd64) echo x64 ;; arm64) echo arm64 ;; *) die "unknown arch $1" ;; esac; }
