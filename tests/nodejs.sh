@@ -132,7 +132,7 @@ publisher=$(start "$PUBLISH_IMAGE")
 docker exec "$publisher" bash -euc '
   export DEBIAN_FRONTEND=noninteractive
   apt-get update -qq
-  apt-get install -y -qq apt-utils createrepo-c rpm gnupg rsync jq xz-utils >/dev/null
+  apt-get install -y -qq apt-utils createrepo-c rpm gnupg rsync jq xz-utils zstd >/dev/null
   export GNUPGHOME=/t/gnupg
   mkdir -m700 "$GNUPGHOME"
   gpg --batch --passphrase "" --quick-gen-key "Test <test@example.com>" ed25519 sign never 2>/dev/null

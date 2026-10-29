@@ -120,7 +120,9 @@ run_systemd() {
     # Instances of template units (anubis@web) that SERVICE_TEST started.
     templates=$( (dpkg -L "$NAME" 2>/dev/null || rpm -ql "$NAME") | grep -E "/systemd/system/[^/]+@\.service$" | xargs -rn1 basename)
     instances=$(for t in $templates; do systemctl list-units --plain --no-legend --state=active "${t%.service}*.service" | cut -d" " -f1; done)
-    [ -z "$templates" ] || [ -n "$instances" ] || { echo "SERVICE_TEST started no instance of $templates"; exit 1; }
+    # A package with only templates (anubis) must have started an instance.
+    [ -n "$units" ] || [ -z "$templates" ] || [ -n "$instances" ] ||
+      { echo "SERVICE_TEST started no instance of $templates"; exit 1; }
     # Removal must also undo `systemctl enable`, leaving no dangling links.
     for u in $units; do systemctl enable "$u"; done
     eval "$REMOVE"

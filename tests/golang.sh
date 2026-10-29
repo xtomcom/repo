@@ -190,7 +190,7 @@ run() { docker exec "$1" bash -euc "source /t/client.sh; $2"; }
 publisher=$(start "$PUBLISH_IMAGE")
 run "$publisher" '
   quiet apt-get update
-  quiet apt-get install -y apt-utils createrepo-c rpm gnupg rsync jq xz-utils
+  quiet apt-get install -y apt-utils createrepo-c rpm gnupg rsync jq xz-utils zstd
   export GNUPGHOME=/t/gnupg
   mkdir -m700 "$GNUPGHOME"
   quiet gpg --batch --passphrase "" --quick-gen-key "Test <test@example.com>" ed25519 sign never
