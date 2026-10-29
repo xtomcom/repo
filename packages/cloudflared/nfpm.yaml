@@ -1,0 +1,30 @@
+name: cloudflared
+arch: ${ARCH}
+version: ${VERSION}
+release: ${RELEASE}
+section: net
+priority: optional
+maintainer: xTom <packages@xtom.com>
+vendor: xTom
+homepage: https://github.com/cloudflare/cloudflared
+license: Apache-2.0
+description: |-
+  Cloudflare Tunnel client
+  Connects local services to the Cloudflare network through an outbound-only
+  tunnel, and proxies TCP, SSH and RDP through Cloudflare Access.
+contents:
+  - src: ./cloudflared
+    dst: /usr/bin/cloudflared
+    file_info: {mode: 0755}
+  - src: ./cloudflared.1.gz
+    dst: /usr/share/man/man1/cloudflared.1.gz
+  - src: ./LICENSE
+    dst: /usr/share/doc/cloudflared/copyright
+    packager: deb
+  - src: ./LICENSE
+    dst: /usr/share/licenses/cloudflared/LICENSE
+    type: license
+    packager: rpm
+scripts:
+  postinstall: ./postinstall.sh
+  postremove: ./postremove.sh
