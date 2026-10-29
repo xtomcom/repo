@@ -1,0 +1,44 @@
+# forgejo and forgejo-lts. Placeholders, filled in by prepare() in common.sh:
+# @NAME@ (this package), @OTHER@ (the other one), @MAJOR@ (the major version).
+name: @NAME@
+arch: ${ARCH}
+version: ${VERSION}
+release: ${RELEASE}
+section: vcs
+priority: optional
+maintainer: xTom <packages@xtom.com>
+vendor: xTom
+homepage: https://forgejo.org
+license: GPL-3.0-or-later
+description: |-
+  Self-hosted lightweight software forge (Forgejo @MAJOR@)
+  Forgejo is a community-run forge: Git hosting, code review, issue tracking,
+  package registry and CI/CD (Forgejo Actions) in a single binary.
+  The forgejo package follows the newest stable release and forgejo-lts the
+  long-term support release; only one of them can be installed.
+depends:
+  - git
+conflicts:
+  - @OTHER@
+contents:
+  - src: ./forgejo
+    dst: /usr/lib/forgejo/forgejo
+    file_info: {mode: 0755}
+  - src: ./forgejo-wrapper
+    dst: /usr/bin/forgejo
+    file_info: {mode: 0755}
+  - src: ./forgejo.service
+    dst: /usr/lib/systemd/system/forgejo.service
+  - src: ./sysusers.conf
+    dst: /usr/lib/sysusers.d/forgejo.conf
+  - src: ./LICENSE
+    dst: /usr/share/doc/@NAME@/copyright
+    packager: deb
+  - src: ./LICENSE
+    dst: /usr/share/licenses/@NAME@/LICENSE
+    type: license
+    packager: rpm
+scripts:
+  postinstall: ./postinstall.sh
+  preremove: ./preremove.sh
+  postremove: ./postremove.sh

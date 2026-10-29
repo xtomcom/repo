@@ -1,0 +1,35 @@
+name: forgejo-runner
+arch: ${ARCH}
+version: ${VERSION}
+release: ${RELEASE}
+section: devel
+priority: optional
+maintainer: xTom <packages@xtom.com>
+vendor: xTom
+homepage: https://code.forgejo.org/forgejo/runner
+license: GPL-3.0-or-later
+description: |-
+  Runs Forgejo Actions jobs
+  Forgejo Runner connects to a Forgejo instance and runs the jobs of its
+  Actions workflows in Docker or Podman containers, LXC, or on the host.
+depends:
+  - git
+contents:
+  - src: ./forgejo-runner
+    dst: /usr/bin/forgejo-runner
+    file_info: {mode: 0755}
+  - src: ./forgejo-runner.service
+    dst: /usr/lib/systemd/system/forgejo-runner.service
+  - src: ./sysusers.conf
+    dst: /usr/lib/sysusers.d/forgejo-runner.conf
+  - src: ./LICENSE
+    dst: /usr/share/doc/forgejo-runner/copyright
+    packager: deb
+  - src: ./LICENSE
+    dst: /usr/share/licenses/forgejo-runner/LICENSE
+    type: license
+    packager: rpm
+scripts:
+  postinstall: ./postinstall.sh
+  preremove: ./preremove.sh
+  postremove: ./postremove.sh
