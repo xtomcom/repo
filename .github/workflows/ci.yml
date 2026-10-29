@@ -24,6 +24,7 @@ jobs:
     outputs:
       matrix: ${{ steps.matrix.outputs.matrix }}
       all: ${{ steps.matrix.outputs.all }}
+      repo: ${{ steps.matrix.outputs.repo }}
     steps:
       - uses: actions/checkout@v7
         with:
@@ -45,7 +46,7 @@ jobs:
 
   repo:
     needs: matrix
-    if: needs.matrix.outputs.all == 'true'
+    if: needs.matrix.outputs.repo == 'true'
     runs-on: ubuntu-26.04
     env:
       GH_TOKEN: ${{ github.token }}
