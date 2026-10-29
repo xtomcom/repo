@@ -270,6 +270,33 @@ if [[ -n ${CF_ZONE_ID:-} && -n ${CF_API_TOKEN:-} ]]; then
       urls+=("rpm/$prefix$arch/repodata/repomd.xml"{,.asc})
     done
   done
+
+  # Directory listings are cached too. Purge every directory whose contents
+  # changed (new and removed packages, the indexes) and all its parents, and
+  # the same directories under the el9/el10 links for rpm.
+  declare -A dirs=()
+  # add_dirs DIR/: DIR and its parents, as URL paths ("." stands for the root,
+  # since bash can't use an empty key).
+  add_dirs() {
+    local d=$1 el
+    while [[ -n $d ]]; do
+      dirs[$d]=1
+      if [[ $d == rpm/* && $d != rpm/el* ]]; then
+        for el in "${EL_LINKS[@]}"; do dirs[rpm/$el/${d#rpm/}]=1; done
+      fi
+      d=${d%/}
+      if [[ $d == */* ]]; then d=${d%/*}/; else d=; fi
+    done
+    dirs[.]=1
+  }
+  while read -r f; do add_dirs "$(dirname "$f")/"; done < <(
+    cd "$repo" && find deb rpm/*/Packages -type f 2>/dev/null
+    cd "$repo" && find deb/dists rpm/*/repodata -type d 2>/dev/null | sed 's|$|/x|'
+  )
+  for f in "${drop_debs[@]}"; do add_dirs "deb/$(dirname "$f")/"; done
+  for arch in "${!drop_rpms[@]}"; do add_dirs "rpm/$arch/Packages/"; done
+  for d in "${!dirs[@]}"; do urls+=("${d#.}"); done
+
   # The API takes at most 30 URLs per call.
   for ((i = 0; i < ${#urls[@]}; i += 30)); do
     log "purge Cloudflare cache ($i)"

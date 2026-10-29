@@ -10,10 +10,12 @@
 #   - publishing a file name that already exists is refused
 #   - xtom.key on the server is never touched, README.md lists the package
 #   - scripts/repo.sh sets up both client families and refuses unsupported ones
+#   - the Cloudflare purge covers the indexes and every changed directory
+#     listing (a fake curl records the API calls)
 
 source "$(dirname "$0")/../scripts/lib.sh"
 
-name=${1:-rdap} old=${2:-1.0.8} new=${3:-1.0.9}
+name=${1:-nfpm} old=${2:-2.47.0} new=${3:-2.48.0}
 PUBLISH_IMAGE=${PUBLISH_IMAGE:-debian:13}
 DEB_IMAGES=${DEB_IMAGES:-"debian:13 ubuntu:26.04"}
 RPM_IMAGES=${RPM_IMAGES:-"rockylinux/rockylinux:10"}
@@ -48,6 +50,11 @@ run "$publisher" '
   export GNUPGHOME=/t/gnupg
   mkdir -m700 "$GNUPGHOME"
   gpg --batch --passphrase "" --quick-gen-key "Test <test@example.com>" ed25519 sign never
+  # Stand-in for the Cloudflare API: record what would be purged.
+  mkdir -p /t/bin
+  printf "%s\n" "#!/bin/sh" \
+    "case \"\$*\" in *api.cloudflare.com*) cat >> /t/purged.json; echo \"{\\\"success\\\": true}\" ;; *) exec /usr/bin/curl \"\$@\" ;; esac" > /t/bin/curl
+  chmod +x /t/bin/curl
   # xtom.key is maintained by hand on the server; publish.sh must leave it alone.
   gpg --armor --export > /t/www/xtom.key
   sha256sum /t/www/xtom.key > /t/xtom.key.sha256
@@ -60,6 +67,7 @@ run "$publisher" '
 publish() {
   run "$publisher" "
     export GNUPGHOME=/t/gnupg REPO_DEST=/t/www PUBLIC_URL=file:///repo WORK=/t/work VERSIONS_FILE=/t/versions.json
+    export PATH=/t/bin:\$PATH CF_ZONE_ID=test CF_API_TOKEN=test
     export GPG_KEY_ID=\$(gpg --list-keys --with-colons | awk -F: '/^fpr/ {print \$10; exit}')
     DIST=/t/dist-$1 /src/scripts/publish.sh
   "
@@ -105,6 +113,14 @@ run "$publisher" '
   test "$(jq -c --arg n "$NAME" ".[\$n]" /t/versions.json)" = "[\"$NEW-1\"]"
   test -z "$(find /t/www -name "*$OLD*")"
   sha256sum -c --quiet /t/xtom.key.sha256
+  # The publishes purged the indexes, the listings of the directories they
+  # changed and their parents, also under the el9/el10 links.
+  jq -r ".files[]" /t/purged.json | sort -u > /t/purged.txt
+  for u in deb/dists/stable/InRelease rpm/x86_64/repodata/repomd.xml README.md "" deb/ deb/pool/main/ \
+    "deb/pool/main/${NAME:0:1}/$NAME/" rpm/x86_64/Packages/ rpm/el9/x86_64/Packages/ rpm/el10/ deb/dists/stable/main/binary-amd64/; do
+    grep -qxF "file:///repo/$u" /t/purged.txt || { echo "not purged: $u"; exit 1; }
+  done
+  test "$(jq -s "map(.files | length) | max" /t/purged.json)" -le 30
   grep -q "^| \[$NAME\](.*) | $NEW | " /t/www/README.md
 '
 
