@@ -1,0 +1,5 @@
+# frp server, run by frps.service, which does not start while this file has
+# no settings. All options: /usr/share/doc/frp/frps_full_example.toml
+#
+# bindPort = 7000      # where clients connect
+# auth.token = ""      # a long random secret, the same on the clients

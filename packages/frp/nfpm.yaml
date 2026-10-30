@@ -1,0 +1,52 @@
+name: frp
+arch: ${ARCH}
+version: ${VERSION}
+release: ${RELEASE}
+section: net
+priority: optional
+maintainer: xTom <packages@xtom.com>
+vendor: xTom
+homepage: https://github.com/fatedier/frp
+license: Apache-2.0
+description: |-
+  Fast reverse proxy for exposing services behind NAT
+  frp exposes TCP, UDP, HTTP and HTTPS services behind NAT or a firewall
+  through a server with a public address. frps.service and frpc.service run
+  the server and the client, with /etc/frp/frps.toml and /etc/frp/frpc.toml.
+contents:
+  - src: ./frps
+    dst: /usr/bin/frps
+    file_info: {mode: 0755}
+  - src: ./frpc
+    dst: /usr/bin/frpc
+    file_info: {mode: 0755}
+  - src: ./frps.service
+    dst: /usr/lib/systemd/system/frps.service
+  - src: ./frpc.service
+    dst: /usr/lib/systemd/system/frpc.service
+  - src: ./sysusers.conf
+    dst: /usr/lib/sysusers.d/frp.conf
+  # They will hold the token; postinstall gives the frp group read access.
+  - src: ./frps.toml
+    dst: /etc/frp/frps.toml
+    type: config|noreplace
+    file_info: {mode: 0640}
+  - src: ./frpc.toml
+    dst: /etc/frp/frpc.toml
+    type: config|noreplace
+    file_info: {mode: 0640}
+  - src: ./frps_full_example.toml
+    dst: /usr/share/doc/frp/frps_full_example.toml
+  - src: ./frpc_full_example.toml
+    dst: /usr/share/doc/frp/frpc_full_example.toml
+  - src: ./LICENSE
+    dst: /usr/share/doc/frp/copyright
+    packager: deb
+  - src: ./LICENSE
+    dst: /usr/share/licenses/frp/LICENSE
+    type: license
+    packager: rpm
+scripts:
+  postinstall: ./postinstall.sh
+  preremove: ./preremove.sh
+  postremove: ./postremove.sh

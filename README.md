@@ -22,6 +22,7 @@ Packages use official release binaries from upstream distribution channels, incl
 | `forgejo` | [forgejo/forgejo](https://code.forgejo.org/forgejo/forgejo) | amd64, arm64 | Newest stable release. `forgejo.service`, runs as `git`, not enabled by default. [Notes](packages/forgejo/README.md) |
 | `forgejo-lts` | [forgejo/forgejo](https://code.forgejo.org/forgejo/forgejo) | amd64, arm64 | Long-term support release. Conflicts with `forgejo`. [Notes](packages/forgejo/README.md) |
 | `forgejo-runner` | [forgejo/runner](https://code.forgejo.org/forgejo/runner) | amd64, arm64 | `forgejo-runner.service`, runs as `runner`, not enabled by default |
+| `frp` | [fatedier/frp](https://github.com/fatedier/frp) | amd64, arm64 | `frps` and `frpc`. `frps.service` and/or `frpc.service`, configs in `/etc/frp/frps.toml` and `/etc/frp/frpc.toml`, not enabled by default; a service does not start while its config has no settings |
 | `gitea` | [go-gitea/gitea](https://github.com/go-gitea/gitea) | amd64, arm64 | `gitea.service`, runs as `git`, not enabled by default |
 | `golang` | [go.dev](https://go.dev/dl/) | amd64, arm64 | Metapackage for the newest Go (`golang-1.27`); also `go`. See [Go](#go) |
 | `golang-1.27`, `golang-1.26` | [go.dev](https://go.dev/dl/) | amd64, arm64 | One Go minor version each, installable side by side; also `go1.27`, `go-1.27`, `golang1.27` |

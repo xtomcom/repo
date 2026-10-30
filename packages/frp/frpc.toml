@@ -1,0 +1,13 @@
+# frp client, run by frpc.service, which does not start while this file has
+# no settings. All options: /usr/share/doc/frp/frpc_full_example.toml
+#
+# serverAddr = "example.com"
+# serverPort = 7000
+# auth.token = ""      # the server's auth.token
+#
+# [[proxies]]          # expose this machine's SSH as port 6000 of the server
+# name = "ssh"
+# type = "tcp"
+# localIP = "127.0.0.1"
+# localPort = 22
+# remotePort = 6000
