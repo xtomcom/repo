@@ -4,16 +4,21 @@
 # (/usr/bin/forgejo, forgejo.service, /etc/forgejo, /var/lib/forgejo), so
 # they conflict with each other. See README.md.
 UPSTREAM=forgejo/forgejo
-FORGEJO_API=https://code.forgejo.org/api/v1/repos
-# The release schedule behind https://forgejo.org/releases/: major, release
-# date, end of life and whether it is an LTS.
-FORGEJO_SCHEDULE=https://codeberg.org/forgejo/docs/raw/branch/next/release-schedule.json
 # Forgejo's release signing key, given on https://forgejo.org/download/.
 FORGEJO_KEY=EB114F5E6C0DC2BCDD183550A4B61A2DC5923710
 
-# Releases live on code.forgejo.org (codeberg.org mirrors them).
+# forgejo_get PATH: fetch PATH from code.forgejo.org or, when that fails (it
+# sometimes answers 504), from its mirror on codeberg.org.
+forgejo_get() {
+  local host
+  for host in code.forgejo.org codeberg.org; do
+    curl -fsL --retry 2 "https://$host/$1" && return 0
+  done
+  return 1
+}
+
 forgejo_versions() {
-  curl -fsSL --retry 3 "$FORGEJO_API/$UPSTREAM/releases?limit=50" |
+  forgejo_get "api/v1/repos/$UPSTREAM/releases?limit=50" |
     jq -r '.[] | select(.draft or .prerelease | not) | .tag_name | sub("^v"; "")'
 }
 
@@ -22,17 +27,29 @@ versions() { forgejo_versions; }
 # forgejo_tracks: set FORGEJO_STABLE to the newest released major, and
 # FORGEJO_LTS to the oldest released LTS major that has not reached its end of
 # life, so forgejo-lts moves to the next LTS (15 -> 19) only when the current
-# one ends. Looked up once per run; empty when upstream cannot be reached.
+# one ends. Both empty when upstream cannot be reached.
+# The release schedule (behind https://forgejo.org/releases/) gives each
+# major's release date, end of life and whether it is an LTS.
+# publish.sh loads the packages in subshells, one per index, so the result is
+# kept in a file for the run ($$ is the script's PID in its subshells too).
 forgejo_tracks() {
-  [[ -z ${FORGEJO_TRACKS_DONE:-} ]] || return 0
-  FORGEJO_TRACKS_DONE=1 FORGEJO_STABLE='' FORGEJO_LTS=''
-  local released schedule
-  released=$(forgejo_versions | cut -d. -f1 | sort -un) || return 0
-  schedule=$(curl -fsSL --retry 3 "$FORGEJO_SCHEDULE") || return 0
-  FORGEJO_STABLE=$(tail -n1 <<<"$released")
-  FORGEJO_LTS=$(jq -r --arg today "$(date -u +%F)" \
-    '.[] | select(.lts and .eol > $today) | .major' <<<"$schedule" |
-    grep -Fx -f - <(echo "$released") | head -n1) || true
+  local cache=$WORK/.forgejo-tracks.$$ released schedule
+  if [[ -f $cache ]]; then
+    # shellcheck source=/dev/null
+    source "$cache"
+    return 0
+  fi
+  FORGEJO_STABLE='' FORGEJO_LTS=''
+  if released=$(forgejo_versions | cut -d. -f1 | sort -un) && [[ -n $released ]] &&
+    schedule=$(forgejo_get forgejo/docs/raw/branch/next/release-schedule.json); then
+    FORGEJO_STABLE=$(tail -n1 <<<"$released")
+    FORGEJO_LTS=$(jq -r --arg today "$(date -u +%F)" \
+      '.[] | select(.lts and .eol > $today) | .major' <<<"$schedule" |
+      grep -Fx -f - <(echo "$released") | head -n1) || true
+  fi
+  mkdir -p "$WORK"
+  find "$WORK" -maxdepth 1 -name '.forgejo-tracks.*' -mmin +60 -delete
+  printf 'FORGEJO_STABLE=%q FORGEJO_LTS=%q\n' "$FORGEJO_STABLE" "$FORGEJO_LTS" >"$cache"
 }
 
 # forgejo_branches MAJOR: set BRANCHES to MAJOR or, when the lookup failed, to
