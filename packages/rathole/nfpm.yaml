@@ -1,0 +1,45 @@
+name: rathole
+arch: ${ARCH}
+version: ${VERSION}
+release: ${RELEASE}
+section: net
+priority: optional
+maintainer: xTom <packages@xtom.com>
+vendor: xTom
+homepage: https://github.com/rathole-org/rathole
+license: Apache-2.0
+description: |-
+  Reverse proxy for NAT traversal
+  rathole exposes services behind NAT through a server with a public address,
+  like frp and ngrok. rathole-server.service and rathole-client.service run
+  the two sides, with /etc/rathole/server.toml and /etc/rathole/client.toml.
+contents:
+  - src: ./rathole
+    dst: /usr/bin/rathole
+    file_info: {mode: 0755}
+  - src: ./rathole-server.service
+    dst: /usr/lib/systemd/system/rathole-server.service
+  - src: ./rathole-client.service
+    dst: /usr/lib/systemd/system/rathole-client.service
+  - src: ./sysusers.conf
+    dst: /usr/lib/sysusers.d/rathole.conf
+  # They will hold the token; postinstall gives the rathole group read access.
+  - src: ./server.toml
+    dst: /etc/rathole/server.toml
+    type: config|noreplace
+    file_info: {mode: 0640}
+  - src: ./client.toml
+    dst: /etc/rathole/client.toml
+    type: config|noreplace
+    file_info: {mode: 0640}
+  - src: ./LICENSE
+    dst: /usr/share/doc/rathole/copyright
+    packager: deb
+  - src: ./LICENSE
+    dst: /usr/share/licenses/rathole/LICENSE
+    type: license
+    packager: rpm
+scripts:
+  postinstall: ./postinstall.sh
+  preremove: ./preremove.sh
+  postremove: ./postremove.sh

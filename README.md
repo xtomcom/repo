@@ -33,6 +33,7 @@ Packages use official release binaries from upstream distribution channels, incl
 | `oha` | [hatoo/oha](https://github.com/hatoo/oha) | amd64, arm64 | HTTP load generator |
 | `opencode-cli` | [anomalyco/opencode](https://github.com/anomalyco/opencode) | amd64, arm64 | opencode 2.x CLI; also installable as `opencode`. [Notes](packages/opencode-cli/README.md) |
 | `opencode-desktop` | [anomalyco/opencode](https://github.com/anomalyco/opencode) | amd64, arm64 | Desktop app (Electron), its self-updater disabled; replaces upstream's `opencode` desktop package. [Notes](packages/opencode-desktop/README.md) |
+| `rathole` | [rathole-org/rathole](https://github.com/rathole-org/rathole) | amd64, arm64 | `rathole-server.service` and `rathole-client.service`, configs in `/etc/rathole/server.toml` and `/etc/rathole/client.toml`, not enabled by default |
 | `rclone` | [rclone/rclone](https://github.com/rclone/rclone) | amd64, arm64 | |
 | `rdap` | [xtomcom/rdap](https://github.com/xtomcom/rdap) | amd64, arm64 | Replaces Debian/Ubuntu's `rdap` (OpenRDAP). Optional API server: `rdap.service`, config in `/etc/default/rdap`, not enabled by default |
 | `rustfs` | [rustfs/rustfs](https://github.com/rustfs/rustfs) | amd64, arm64 | `rustfs.service`, config in `/etc/default/rustfs`, not enabled by default |

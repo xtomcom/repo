@@ -134,7 +134,7 @@ Details: [packages/golang/README.md](https://github.com/xtomcom/repo/blob/main/p
 
 ## Services
 
-Packages that ship a service (anubis, caddy, dnsproxy, ferron, forgejo, forgejo-lts, forgejo-runner, gitea, maddy, rdap, rustfs, vaultwarden, versitygw, yadex, yuki) do not start it on install. Edit the configuration first, then enable it with `systemctl enable --now <service>`. The exact steps are printed when the package is installed.
+Packages that ship a service (anubis, caddy, dnsproxy, ferron, forgejo, forgejo-lts, forgejo-runner, gitea, maddy, rathole, rdap, rustfs, vaultwarden, versitygw, yadex, yuki) do not start it on install. Edit the configuration first, then enable it with `systemctl enable --now <service>`. The exact steps are printed when the package is installed.
 
 ## Support
 

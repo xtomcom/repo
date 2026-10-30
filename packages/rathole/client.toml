@@ -1,0 +1,10 @@
+# rathole client, run by rathole-client.service. It connects to a rathole
+# server and forwards local services to it. Changes are picked up without a
+# restart. See https://github.com/rathole-org/rathole#configuration.
+#
+# [client]
+# remote_addr = "example.com:2333"   # the server's bind_addr
+# default_token = ""                 # the server's default_token
+#
+# [client.services.ssh]              # the same name as on the server
+# local_addr = "127.0.0.1:22"        # the service to expose

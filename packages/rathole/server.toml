@@ -1,0 +1,10 @@
+# rathole server, run by rathole-server.service. It accepts rathole clients
+# and exposes their services on this machine. Changes are picked up without a
+# restart. See https://github.com/rathole-org/rathole#configuration.
+#
+# [server]
+# bind_addr = "0.0.0.0:2333"   # where clients connect
+# default_token = ""           # a long random secret, the same on the client
+#
+# [server.services.ssh]
+# bind_addr = "0.0.0.0:5202"   # where the client's service is exposed
