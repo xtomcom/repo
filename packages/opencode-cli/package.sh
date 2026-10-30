@@ -18,8 +18,11 @@ test ! -e /root/.opencode
 test "$(bash -lc "echo \$OPENCODE_DISABLE_AUTOUPDATE")" = 1
 test "$(OPENCODE_DISABLE_AUTOUPDATE=0 bash -lc "echo \$OPENCODE_DISABLE_AUTOUPDATE")" = 0'
 
-# The tarballs use x64 / arm64.
-opencode_arch() { case $1 in amd64) echo x64 ;; arm64) echo arm64 ;; *) die "unknown arch $1" ;; esac; }
+# The tarballs use x64 / arm64. On amd64 we take x64-baseline, which the
+# installer (opencode.ai/v2/install) picks on CPUs without AVX2 and which runs
+# on any x86-64 CPU. Up to 2.2.1 it was the same file as x64; since 2.2.2 the
+# two differ in one flag byte of the embedded Bun trailer, not in code.
+opencode_arch() { case $1 in amd64) echo x64-baseline ;; arm64) echo arm64 ;; *) die "unknown arch $1" ;; esac; }
 
 # fetch VERSION NAME: download, verify and unpack opencode-linux-NAME.tar.gz into dl/NAME.
 fetch() {
@@ -31,19 +34,9 @@ fetch() {
 }
 
 prepare() {
-  local version=$1 name host s x64 baseline
+  local version=$1 name host s
   name=$(opencode_arch "$2")
   fetch "$version" "$name"
-  if [[ $2 == amd64 ]]; then
-    # The installer (opencode.ai/v2/install, which takes the same binaries from
-    # npm) picks x64-baseline on CPUs without AVX2, but current releases ship
-    # the same tarball under both names. Fail if that changes, so a human
-    # decides how to handle two builds.
-    x64=$(gh_asset_sha256 "$UPSTREAM" "v$version" opencode-linux-x64.tar.gz)
-    baseline=$(gh_asset_sha256 "$UPSTREAM" "v$version" opencode-linux-x64-baseline.tar.gz)
-    [[ $x64 == "$baseline" ]] ||
-      die "opencode-linux-x64 and opencode-linux-x64-baseline differ in $version; decide which to package"
-  fi
   check_glibc "dl/$name/opencode"
   install -Dm755 "dl/$name/opencode" opencode
   download "https://raw.githubusercontent.com/$UPSTREAM/v$version/LICENSE" LICENSE

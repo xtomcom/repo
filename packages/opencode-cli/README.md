@@ -13,7 +13,7 @@ The package is named `opencode-cli` and provides `opencode` (with epoch 1, `open
 
 The installer also creates `~/.opencode/bin/opencode2`, a compatibility shim for v1 installations; this package does not ship it.
 
-On x86-64, upstream also publishes `opencode-linux-x64-baseline.tar.gz` for CPUs without AVX2, and the installer selects it on those CPUs. Current releases provide the same tarball under both names, so a separate baseline package is not required.
+On x86-64, the package uses `opencode-linux-x64-baseline.tar.gz`, the build the installer selects on CPUs without AVX2. It runs on any x86-64 CPU. Its code is the same as `opencode-linux-x64.tar.gz`.
 
 `git` and `ripgrep` are recommended. OpenCode uses `rg` from `PATH`; without it, it downloads its own copy to `~/.cache/opencode/bin` the first time it searches files. On EL, `ripgrep` comes from EPEL.
 
