@@ -1,0 +1,41 @@
+name: gobackup
+arch: ${ARCH}
+version: ${VERSION}
+release: ${RELEASE}
+section: admin
+priority: optional
+maintainer: xTom <packages@xtom.com>
+vendor: xTom
+homepage: https://gobackup.github.io
+license: MIT
+description: |-
+  Back up databases and files to cloud storage on a schedule
+  GoBackup dumps databases (MySQL, PostgreSQL, Redis, MongoDB and others) and
+  archives files, then compresses, encrypts and stores them locally or on S3,
+  SFTP, WebDAV and other storages. gobackup.service runs the scheduled
+  backups configured in /etc/gobackup/gobackup.yml.
+contents:
+  - src: ./gobackup
+    dst: /usr/bin/gobackup
+    file_info: {mode: 0755}
+  - src: ./gobackup.service
+    dst: /usr/lib/systemd/system/gobackup.service
+  # It will hold database and storage passwords.
+  - src: ./gobackup.yml
+    dst: /etc/gobackup/gobackup.yml
+    type: config|noreplace
+    file_info: {mode: 0600}
+  - src: ./logrotate
+    dst: /etc/logrotate.d/gobackup
+    type: config|noreplace
+  - src: ./LICENSE
+    dst: /usr/share/doc/gobackup/copyright
+    packager: deb
+  - src: ./LICENSE
+    dst: /usr/share/licenses/gobackup/LICENSE
+    type: license
+    packager: rpm
+scripts:
+  postinstall: ./postinstall.sh
+  preremove: ./preremove.sh
+  postremove: ./postremove.sh

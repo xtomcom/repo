@@ -1,0 +1,35 @@
+# GoBackup configuration for gobackup.service, which does not start until at
+# least one model is defined under "models". `gobackup perform` run as root
+# reads this file as well.
+# Reference: https://gobackup.github.io/configuration
+#
+# The web UI and API can start backups and download them. Upstream listens on
+# 0.0.0.0 without a password by default; here it listens on 127.0.0.1 only.
+# Set a username and password before using another address.
+web:
+  host: 127.0.0.1
+  port: 2703
+  # username: admin
+  # password: change-me
+
+models:
+  # my_app:
+  #   schedule:
+  #     cron: "0 4 * * *"
+  #   compress_with:
+  #     type: tgz
+  #   storages:
+  #     local:
+  #       type: local
+  #       keep: 7
+  #       path: /var/backups/gobackup
+  #   databases:
+  #     my_app:
+  #       type: mysql
+  #       host: localhost
+  #       port: 3306
+  #       database: my_app
+  #       username: root
+  #   archive:
+  #     includes:
+  #       - /var/www/my_app/uploads

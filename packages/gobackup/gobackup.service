@@ -1,0 +1,23 @@
+# Runs as root: backups read files and database sockets anywhere on the system.
+# The configuration must define a model, or GoBackup exits.
+[Unit]
+Description=GoBackup scheduled backups
+Documentation=https://gobackup.github.io/
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Environment=GOBACKUP_DIR=/var/lib/gobackup
+ExecStart=/usr/bin/gobackup run --config /etc/gobackup/gobackup.yml
+ExecReload=/bin/kill -HUP $MAINPID
+Restart=on-failure
+RestartSec=5s
+# Exit status 1 is a configuration error; retrying will not fix it.
+RestartPreventExitStatus=1
+StateDirectory=gobackup
+StateDirectoryMode=0700
+PrivateTmp=yes
+UMask=0077
+
+[Install]
+WantedBy=multi-user.target

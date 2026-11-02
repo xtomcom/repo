@@ -24,6 +24,7 @@ Packages use official release binaries from upstream distribution channels, incl
 | `forgejo-runner` | [forgejo/runner](https://code.forgejo.org/forgejo/runner) | amd64, arm64 | `forgejo-runner.service`, runs as `runner`, not enabled by default |
 | `frp` | [fatedier/frp](https://github.com/fatedier/frp) | amd64, arm64 | `frps` and `frpc`. `frps.service` and/or `frpc.service`, configs in `/etc/frp/frps.toml` and `/etc/frp/frpc.toml`, not enabled by default; a service does not start while its config has no settings |
 | `gitea` | [go-gitea/gitea](https://github.com/go-gitea/gitea) | amd64, arm64 | `gitea.service`, runs as `git`, not enabled by default |
+| `gobackup` | [gobackup/gobackup](https://github.com/gobackup/gobackup) | amd64, arm64 | `gobackup.service`, config in `/etc/gobackup/gobackup.yml`, not enabled by default; web UI on `127.0.0.1:2703` |
 | `golang` | [go.dev](https://go.dev/dl/) | amd64, arm64 | Metapackage for the newest Go (`golang-1.27`); also `go`. See [Go](#go) |
 | `golang-1.27`, `golang-1.26` | [go.dev](https://go.dev/dl/) | amd64, arm64 | One Go minor version each, installable side by side; also `go1.27`, `go-1.27`, `golang1.27` |
 | `goreleaser` | [goreleaser/goreleaser](https://github.com/goreleaser/goreleaser) | amd64, arm64 | |
