@@ -46,6 +46,7 @@ arm64 cannot be tested on a machine without emulation (exit status 255); CI test
 
 ## Rules
 
+- Don't package software whose upstream runs its own apt/dnf repository for our systems (e.g. Tailscale): it duplicates their work, and two packages of the same name in two repositories keep replacing each other.
 - Follow Debian and EPEL packaging conventions. Our version must sort newer than the distribution's own package of the same name.
 - Verify every download: the upstream checksum file (`verify_sums`), a GPG signature, or, if upstream publishes neither, the SHA-256 digest GitHub records for the asset (`verify_sha256` with `gh_asset_sha256`). If none exists, pin the hashes in `prepare` and fail on unknown versions.
 - Call `check_glibc` on glibc builds (oldest supported glibc is 2.34, EL9). Use the musl build only when the glibc one needs more.
